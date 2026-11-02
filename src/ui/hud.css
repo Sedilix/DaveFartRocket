@@ -1,0 +1,942 @@
+:root {
+  --safe-top: max(12px, env(safe-area-inset-top));
+  --safe-bottom: max(16px, env(safe-area-inset-bottom));
+  --safe-left: max(16px, env(safe-area-inset-left));
+  --safe-right: max(16px, env(safe-area-inset-right));
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #05070f;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  touch-action: none;
+}
+
+#canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Base HUD Container: Pointer-events disabled on empty overlay space */
+#hud-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   ZONE 1: TOP HUD CARD
+   ========================================================================== */
+.hud-top-zone {
+  position: absolute;
+  top: var(--safe-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 440px;
+  pointer-events: auto;
+  z-index: 20;
+}
+
+.hud-glass-card {
+  /* No backdrop-filter: the canvas repaints every frame and the blur was barely visible */
+  background: rgba(28, 34, 48, 0.94);
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  border-radius: 16px;
+  padding: 14px 18px 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.hud-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hud-row-meta {
+  margin-bottom: 2px;
+}
+
+.hud-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hud-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.music-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+/* Dev-only button: icon only on narrow phones so the header stays on one line */
+@media (max-width: 380px) {
+  #music-preview-label {
+    display: none;
+  }
+}
+
+.music-preview-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+}
+
+.music-preview-btn.playing {
+  background: rgba(46, 204, 113, 0.3);
+  border-color: #2ecc71;
+  color: #a3e9b9;
+  box-shadow: 0 0 8px rgba(46, 204, 113, 0.4);
+}
+
+.hud-fart-count {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.hud-row-metrics {
+  margin: 2px 0 8px;
+}
+
+.hud-multiplier-val {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+}
+
+.hud-decibels-val {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #2ecc71;
+  text-shadow: 0 0 12px rgba(46, 204, 113, 0.4);
+}
+
+/* Extra bottom padding gives the "194 dB LIMIT" tag its own line */
+.hud-progress-container {
+  position: relative;
+  width: 100%;
+  margin: 6px 0 4px;
+  padding-bottom: 16px;
+}
+
+.hud-progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* The gradient spans the whole track; the fill is revealed with clip-path so
+   a low fill only shows the green end and the bar "heats up" as it grows. */
+.hud-progress-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #2ecc71 0%, #f1c40f 45%, #e67e22 75%, #e74c3c 100%);
+  clip-path: inset(0 100% 0 0 round 4px);
+  transition: clip-path 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.hud-limit-tick {
+  position: absolute;
+  top: -2px;
+  left: 97%;
+  width: 2.5px;
+  height: 12px;
+  background: #ffffff;
+  border-radius: 1px;
+  box-shadow: 0 0 8px #ffffff;
+}
+
+.hud-limit-tag {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.hud-row-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+/* Solid CSS dot (colour set from JS via style.color) */
+.hud-status-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  color: #2ecc71;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.hud-status-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  color: rgba(255, 255, 255, 0.95);
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Narrative slot inside the card: fixed height, one line of story at a time,
+   so the card never changes size when the text changes.
+   ========================================================================== */
+.hud-narrative {
+  position: relative;
+  margin-top: 8px;
+  height: 60px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.narrative-center-popup,
+.narrative-subtitle-pill {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+  /* The outgoing line vanishes instantly (no transition), the incoming one fades in after
+     a short delay, so two lines are never readable on top of each other */
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hud-narrative[data-mode="popup"] .narrative-center-popup,
+.hud-narrative[data-mode="subtitle"] .narrative-subtitle-pill {
+  opacity: 1;
+  transition: opacity 0.3s ease 0.05s;
+}
+
+/* Milestone popup (e.g. 90 dB Louder than a lawn mower) */
+.narrative-center-popup {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.narrative-center-popup .popup-sub {
+  font-size: 13px;
+  font-weight: 400;
+  font-style: italic;
+  color: #8ed6ff;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.narrative-subtitle-pill p {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.35;
+}
+
+/* Visually hidden, still announced by screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   ZONE 2: MIDDLE NARRATIVE ZONE - onomatopoeia anchored near screen centre
+   ========================================================================== */
+.hud-narrative-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  pointer-events: none;
+  z-index: 15;
+  /* Upper third, always clear of the card (--card-bottom is measured by HudController) */
+  padding: max(33vh, calc(var(--card-bottom, 208px) + 14px)) 12px 0;
+}
+
+/* Giant Yellow Comic Onomatopoeia */
+.narrative-onomatopoeia {
+  max-width: 100%;
+  font-family: Georgia, "Times New Roman", serif;
+  /* --chars is set from JS: short words are big, long strings shrink to fit one line.
+     Heavy italic Georgia caps are about 0.74 em wide (wider serifs on Android), hence the factor.
+     HudController then measures the real width and shrinks further if needed. */
+  font-size: clamp(20px, min(9vw, calc(92vw / (var(--chars, 6) * 0.78))), 48px);
+  font-weight: 900;
+  font-style: italic;
+  color: #f6e05e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  white-space: nowrap;
+  /* Outline and shadows scale with the font so small text is not swamped */
+  -webkit-text-stroke: 0.08em #000;
+  paint-order: stroke fill;
+  text-shadow: 0.06em 0.06em 0 #000, -0.04em -0.04em 0 #000, 0.04em -0.04em 0 #000, -0.04em 0.04em 0 #000, 0 0.12em 0.3em rgba(0,0,0,0.85);
+  transform: rotate(-5deg) scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pop-anim {
+  animation: onomatopoeia-pop 1.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+@keyframes onomatopoeia-pop {
+  0% {
+    transform: rotate(-5deg) scale(0.3);
+    opacity: 0;
+  }
+  15% {
+    transform: rotate(-5deg) scale(1.15);
+    opacity: 1;
+  }
+  30% {
+    transform: rotate(-4deg) scale(1.0);
+    opacity: 1;
+  }
+  80% {
+    transform: rotate(-3deg) scale(0.98);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-2deg) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes onomatopoeia-fade {
+  0% { opacity: 0; }
+  15%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Wide landscape (desktop): the centre of the screen is Dave's head, so the pop goes to the right of him */
+@media (min-width: 700px) and (min-height: 601px) and (orientation: landscape) {
+  .hud-narrative-zone {
+    align-items: flex-end;
+    padding-right: 4vw;
+  }
+  .narrative-onomatopoeia {
+    max-width: 42vw;
+  }
+}
+
+/* Portrait phones: 33vh lands on Dave's head, so sit in the band just under the card instead */
+@media (orientation: portrait) {
+  .hud-narrative-zone {
+    padding-top: calc(var(--card-bottom, 208px) + 10px);
+  }
+}
+
+/* ==========================================================================
+   ZONE 3: BOTTOM CONTROL ZONE (height: 190px, bottom: safe-area)
+   ========================================================================== */
+.hud-bottom-zone {
+  --ctl: 108px;
+  position: absolute;
+  bottom: var(--safe-bottom);
+  left: 0;
+  width: 100%;
+  height: 190px;
+  display: flex;
+  justify-content: space-between;
+  /* Same label height in both columns, so the circles line up */
+  align-items: flex-end;
+  /* top right bottom left */
+  padding: 0 var(--safe-right) 0 var(--safe-left);
+  pointer-events: none;
+  z-index: 25;
+}
+
+/* Virtual Joystick */
+.joystick-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.joystick-base {
+  width: var(--ctl);
+  height: var(--ctl);
+  background: rgba(25, 33, 50, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  touch-action: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.joystick-handle {
+  width: calc(var(--ctl) * 0.444);
+  height: calc(var(--ctl) * 0.444);
+  background: radial-gradient(circle at 35% 35%, #ffffff, #8899aa);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* Right Circular RELEASE Button */
+.release-btn-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.release-ring-wrapper {
+  position: relative;
+  width: var(--ctl);
+  height: var(--ctl);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+}
+
+.tension-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.tension-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-width: 5;
+}
+
+.tension-indicator {
+  fill: none;
+  stroke: #ff5722;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.1s linear;
+  filter: drop-shadow(0 0 6px #ff5722);
+}
+
+/* Last second: change colour and pulse so urgency is not colour-only */
+.release-ring-wrapper.urgent .tension-indicator {
+  stroke: #ffeb3b;
+  filter: drop-shadow(0 0 8px #ffeb3b);
+  animation: ring-urgent 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes ring-urgent {
+  from { stroke-width: 6; }
+  to { stroke-width: 9; }
+}
+
+.release-button {
+  width: calc(var(--ctl) * 0.72);
+  height: calc(var(--ctl) * 0.72);
+  background: radial-gradient(circle at 35% 35%, #e64a19, #bf360c);
+  border: 2.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  box-shadow: 0 6px 20px rgba(216, 67, 21, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  outline: none;
+  transition: transform 0.08s ease, filter 0.15s ease;
+  touch-action: manipulation;
+  position: relative;
+  z-index: 1;
+}
+
+/* Dark backing disc: keeps RELEASE / WAIT readable over any bright scenery behind it */
+.release-ring-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(10, 14, 24, 0.55);
+  pointer-events: none;
+}
+
+.release-button:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.release-button:active {
+  transform: scale(0.92);
+  filter: brightness(1.2);
+}
+
+/* "Start here" pulse until the first touch or key */
+.release-button.nudge {
+  animation: release-nudge 1.2s ease-in-out infinite;
+}
+
+@keyframes release-nudge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* Short lockout after each release */
+.release-button.cooling {
+  filter: grayscale(0.75) brightness(0.9);
+}
+
+.release-text {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.control-label {
+  max-width: calc(var(--ctl) + 28px);
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(10, 14, 24, 0.55);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  text-transform: uppercase;
+}
+
+/* Keyboard shortcut hint: only for mouse/keyboard devices, retired after the first release */
+.key-hint {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: rgba(10, 14, 24, 0.55);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  line-height: 1.25;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.85);
+  transition: opacity 0.8s ease;
+}
+
+/* Needs room between the two control columns, so not in tiny desktop windows */
+@media (pointer: fine) and (min-width: 480px) {
+  .key-hint {
+    display: block;
+  }
+}
+
+.key-hint.hidden {
+  opacity: 0;
+}
+
+/* ==========================================================================
+   WHITEOUT FLASH & CLIMAX ENDING
+   ========================================================================== */
+.whiteout-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 100;
+  transition: opacity 0.05s ease;
+}
+
+.climax-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Darker scrim instead of a blur, so the debris field stays sharp */
+  background: rgba(5, 7, 15, 0.6);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+}
+
+/* display is set first, then .is-visible is added after a reflow so this fades in */
+.climax-overlay.is-visible {
+  opacity: 1;
+  transition: opacity 1.5s ease;
+  pointer-events: auto;
+}
+
+.climax-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 12px;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.9);
+}
+
+.climax-sub {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  font-style: italic;
+  color: #a0aec0;
+  margin-bottom: 32px;
+  text-align: center;
+  max-width: 360px;
+}
+
+.play-again-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  border-radius: 28px;
+  padding: 14px 36px;
+  min-height: 44px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.play-again-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.play-again-button:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 4px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.play-again-button:active {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(0.96);
+}
+
+/* Not armed yet (see PLAY_AGAIN_ARM_MS): dimmed and inert, then lights up */
+.play-again-button.waiting,
+.play-again-button.waiting:hover,
+.play-again-button.waiting:active {
+  opacity: 0.4;
+  background: rgba(255, 255, 255, 0.2);
+  transform: none;
+  cursor: default;
+}
+
+/* "Tap to skip" cue for the ending cinematic */
+.skip-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 12px);
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  border-radius: 12px;
+  background: rgba(10, 14, 24, 0.55);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+  z-index: 30;
+}
+
+.skip-hint.visible {
+  opacity: 1;
+}
+
+/* Closing cinematic and ending: clear the screen so the camera work and
+   the "Dave is fine." title read on their own */
+#hud-root .hud-top-zone,
+#hud-root .hud-bottom-zone {
+  transition: opacity 0.6s ease;
+}
+/* visibility:hidden (after the fade) also drops the hidden controls from the Tab order */
+#hud-root.cinematic .hud-top-zone,
+#hud-root.cinematic .hud-bottom-zone {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
+}
+/* Children declare pointer-events:auto, which would override the inherited none */
+#hud-root.cinematic .joystick-container,
+#hud-root.cinematic .release-btn-container {
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
+/* Narrow phones */
+@media (max-width: 360px) {
+  .hud-top-zone {
+    width: calc(100% - 24px);
+  }
+  .hud-glass-card {
+    padding: 10px 12px 8px;
+  }
+  .hud-multiplier-val {
+    font-size: 22px;
+  }
+  .hud-decibels-val {
+    font-size: 20px;
+  }
+  .hud-narrative {
+    height: 52px;
+  }
+  .narrative-center-popup {
+    font-size: 15px;
+  }
+  .narrative-center-popup .popup-sub,
+  .narrative-subtitle-pill p {
+    font-size: 12px;
+  }
+  .climax-title {
+    font-size: 36px;
+  }
+}
+
+/* Short viewports (small phones, landscape): compact card that stays clear of Dave */
+@media (max-height: 600px) {
+  .hud-glass-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 4px;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+  .hud-row-meta,
+  .hud-row-metrics {
+    margin: 0;
+  }
+  .hud-row-meta {
+    order: 1;
+  }
+  .hud-row-metrics {
+    order: 2;
+    flex: 1 1 auto;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  .hud-label,
+  .hud-limit-tag,
+  .hud-row-status {
+    display: none;
+  }
+  .hud-multiplier-val {
+    font-size: 20px;
+  }
+  .hud-decibels-val {
+    font-size: 18px;
+  }
+  .hud-progress-container {
+    order: 3;
+    flex: 1 0 100%;
+    margin: 0;
+    padding-bottom: 0;
+  }
+  .hud-progress-track {
+    height: 6px;
+  }
+  .hud-limit-tick {
+    height: 10px;
+  }
+  /* One single-line story slot: the popup headline is rendered into the subtitle line by JS */
+  .hud-narrative {
+    order: 4;
+    flex: 1 0 100%;
+    margin-top: 0;
+    height: 34px;
+  }
+  .narrative-center-popup {
+    display: none;
+  }
+  .hud-narrative[data-mode="popup"] .narrative-subtitle-pill,
+  .hud-narrative[data-mode="subtitle"] .narrative-subtitle-pill {
+    opacity: 1;
+  }
+  .narrative-subtitle-pill {
+    top: 4px;
+  }
+  .narrative-subtitle-pill p {
+    font-size: 11px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Portrait: sit just under the compact card, clear of Dave's torso */
+  .hud-narrative-zone {
+    padding-top: calc(var(--card-bottom, 122px) + 12px);
+  }
+
+  .hud-bottom-zone {
+    --ctl: 88px;
+    height: 130px;
+  }
+  .release-text {
+    font-size: 10px;
+  }
+  .climax-title {
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
+  .climax-sub {
+    margin-bottom: 16px;
+  }
+}
+
+/* Landscape phones: park the card top-left so the centre of the screen stays free */
+@media (max-height: 600px) and (orientation: landscape) {
+  .hud-top-zone {
+    left: var(--safe-left);
+    transform: none;
+    width: min(340px, 46vw);
+    max-width: none;
+  }
+  /* Card is parked at the left, so the centre is free */
+  .hud-narrative-zone {
+    padding-top: 0;
+    justify-content: center;
+    /* Dave stands at screen centre: the pop goes to his right, as on desktop */
+    align-items: flex-end;
+    padding-right: 4vw;
+  }
+  .narrative-onomatopoeia {
+    max-width: 40vw;
+  }
+}
+
+/* Accessibility: reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .pop-anim {
+    animation: onomatopoeia-fade 1.4s linear forwards;
+    transform: rotate(-3deg) scale(1);
+  }
+  .release-ring-wrapper.urgent .tension-indicator {
+    animation: none;
+    stroke-width: 8;
+  }
+  .release-button.nudge {
+    animation: none;
+  }
+  .hud-progress-fill,
+  .skip-hint,
+  .narrative-center-popup,
+  .narrative-subtitle-pill,
+  .climax-overlay,
+  .climax-overlay.is-visible {
+    transition-duration: 0.01s;
+  }
+  .whiteout-flash {
+    transition: none;
+  }
+  .play-again-button:hover,
+  .play-again-button:active {
+    transform: none;
+  }
+}
