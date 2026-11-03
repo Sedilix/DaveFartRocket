@@ -3,6 +3,8 @@
  * Fully wired to src/ui/tokens.css for visual parity with STREET.
  */
 
+import { audio } from '../audio/AudioEngine';
+
 export type Speaker = string;
 
 export type Mood = 'neutral' | 'worried' | 'delighted' | 'horrified' | 'deadpan' | 'smug';
@@ -157,6 +159,10 @@ export class StoryUi {
     }
 
     this.text.textContent = this.currentFullText.slice(0, this.displayedLength);
+    if (this.displayedLength % 4 === 0) {
+      const line = this.lines[this.index];
+      if (line) audio.playVoiceBlip(line.who);
+    }
 
     // Dynamic pace with punctuation pauses
     const lastChar = this.currentFullText[this.displayedLength - 1];

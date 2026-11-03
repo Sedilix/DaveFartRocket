@@ -7,6 +7,7 @@ import { StoryUi } from './StoryUi';
 import { DESERT_GROUND, FINISH_X, desertGenerator } from './desert';
 import { input } from '../input/UniversalInput';
 import { AmbientParticles } from '../vfx/AmbientParticles';
+import { audio } from '../audio/AudioEngine';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -83,6 +84,7 @@ export class Act4 extends VoxelGame {
     (window as unknown as { __act4?: Act4 }).__act4 = this;
 
     this.frozen = true;
+    audio.playTheme('s4_desert');
     this.runIntro();
   }
 

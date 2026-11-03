@@ -7,6 +7,7 @@ import { StoryUi } from './StoryUi';
 import { DESK, ICE_GROUND, OBS_FLOOR_Y, SHAFT, TELESCOPE, iceGenerator } from './ice';
 import { input } from '../input/UniversalInput';
 import { AmbientParticles } from '../vfx/AmbientParticles';
+import { audio } from '../audio/AudioEngine';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -85,6 +86,7 @@ export class Act3 extends VoxelGame {
     (window as unknown as { __act3?: Act3 }).__act3 = this;
 
     this.frozen = true;
+    audio.playTheme('s3_ice');
     this.runIntro();
   }
 

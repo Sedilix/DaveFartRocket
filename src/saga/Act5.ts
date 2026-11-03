@@ -7,6 +7,7 @@ import { StoryUi } from './StoryUi';
 import { STAR_GROUND, TREE, starGenerator } from './star';
 import { input } from '../input/UniversalInput';
 import { AmbientParticles } from '../vfx/AmbientParticles';
+import { audio } from '../audio/AudioEngine';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -83,6 +84,7 @@ export class Act5 extends VoxelGame {
     (window as unknown as { __act5?: Act5 }).__act5 = this;
 
     this.frozen = true;
+    audio.playTheme('s5_source');
     this.runIntro();
   }
 

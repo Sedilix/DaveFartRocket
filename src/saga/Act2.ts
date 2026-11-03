@@ -8,6 +8,7 @@ import { DRUM, GROUND, HORN, ISLAND, RAVINE_X0, RAVINE_X1, jungleGenerator } fro
 import { input } from '../input/UniversalInput';
 import { HushBubble } from '../vfx/HushBubble';
 import { AmbientParticles } from '../vfx/AmbientParticles';
+import { audio } from '../audio/AudioEngine';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -78,6 +79,7 @@ export class Act2 extends VoxelGame {
     (window as unknown as { __act2?: Act2 }).__act2 = this;
 
     this.frozen = true;
+    audio.playTheme('s2_nom');
     this.runIntro();
   }
 

@@ -8,6 +8,7 @@ import { Quell } from './Quell';
 import { StoryUi } from './StoryUi';
 import { HushBubble } from '../vfx/HushBubble';
 import { AmbientParticles } from '../vfx/AmbientParticles';
+import { audio } from '../audio/AudioEngine';
 
 // ---------------------------------------------------------------- the ship (a block-built interior)
 
@@ -121,6 +122,7 @@ export class Act1 extends VoxelGame {
     (window as unknown as { __act1?: Act1 }).__act1 = this;
 
     this.frozen = true;
+    audio.playTheme('s1_ship');
     this.runIntro();
   }
 

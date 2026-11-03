@@ -1,6 +1,7 @@
 import { progression } from '../core/progression';
 import { settingsModal } from '../ui/Settings';
 import * as THREE from 'three';
+import { audio } from '../audio/AudioEngine';
 
 interface ActCard {
   act: number;
@@ -103,6 +104,7 @@ export class MainMenu {
   }
 
   public start() {
+    audio.playTheme('menu');
     this.setupBackground();
     this.render();
     this.loop();
@@ -254,6 +256,7 @@ export class MainMenu {
   }
 
   public dispose() {
+    audio.stopTheme();
     cancelAnimationFrame(this.animId);
     window.removeEventListener('resize', this.onResize);
     this.renderer?.dispose();
