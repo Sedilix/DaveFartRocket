@@ -34,7 +34,7 @@ export function jungleHeight(x: number, z: number): number {
   return Math.floor(h);
 }
 
-class Filler {
+export class Filler {
   constructor(private data: Uint8Array, private ox: number, private oz: number) {}
 
   public set(x: number, y: number, z: number, id: number) {
@@ -54,7 +54,7 @@ class Filler {
 }
 
 // A cylinder needs a per-cell test, so it is implemented outside the class for clarity
-function cylinder(f: Filler, cx: number, cz: number, r: number, y0: number, y1: number, id: number) {
+export function cylinder(f: Filler, cx: number, cz: number, r: number, y0: number, y1: number, id: number) {
   for (let x = cx - r; x <= cx + r; x++) {
     for (let z = cz - r; z <= cz + r; z++) {
       if ((x - cx) ** 2 + (z - cz) ** 2 <= r * r + 0.5) for (let y = y0; y <= y1; y++) f.set(x, y, z, id);

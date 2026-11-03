@@ -222,6 +222,8 @@ export class Act2 extends VoxelGame {
       act: 'ACT II',
       title: 'A Gust of Wind (and Other Prophecies)',
       blurb: 'Next: Act III, Frostbite Hotel. Where the concierge has a confession and the elevator has questions.',
+      nextHref: '?mode=act3',
+      nextLabel: 'CONTINUE TO ACT III',
       stats: `Farts this act: <b>${this.fartsTotal}</b> &nbsp;·&nbsp; Times Dave fell in the gulch: <b>${this.falls}</b> &nbsp;·&nbsp; Prophet approval: <b>100%</b>`
     });
   }

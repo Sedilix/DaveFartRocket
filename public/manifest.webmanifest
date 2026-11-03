@@ -2,7 +2,7 @@
   "name": "What If Every Fart Doubled In Strength? (Meet Dave)",
   "short_name": "Dave Fart",
   "description": "Interactive 3D low-poly web game. What if every fart doubled in strength?",
-  "start_url": "/",
+  "start_url": "./",
   "display": "fullscreen",
   "orientation": "portrait",
   "background_color": "#05070f",

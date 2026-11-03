@@ -22,7 +22,8 @@ export const B = {
   THATCH: 19,
   TORCH: 20,
   BEAN: 21,
-  SHROOM: 22
+  SHROOM: 22,
+  ICE: 23
 } as const;
 
 export interface BlockInfo {
@@ -55,7 +56,8 @@ export const BLOCKS: BlockInfo[] = [
   { name: 'Thatch', top: 0xd2ae4e, side: 0xc29a3e, bottom: 0xa88130 },
   { name: 'Torch', top: 0xffe27a, side: 0xffc24a, bottom: 0xffc24a },
   { name: 'Bean', top: 0xc99556, side: 0xb8864b, bottom: 0xa5763d },
-  { name: 'Glowshroom', top: 0xff8de0, side: 0xe36fc6, bottom: 0xc95aae }
+  { name: 'Glowshroom', top: 0xff8de0, side: 0xe36fc6, bottom: 0xc95aae },
+  { name: 'Ice', top: 0xcdeaf7, side: 0xa9d6ec, bottom: 0x93c4de }
 ];
 
 /** Blocks the player can place, in hotbar order. */

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  base: './',
   resolve: {
     extensions: ['.ts', '.mjs', '.js', '.json']
   },
@@ -10,7 +11,7 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
-    chunkSizeWarningLimit: 2500,
+    chunkSizeWarningLimit: 5000,
     rollupOptions: {
       output: {
         manualChunks(id) {
