@@ -1,11 +1,19 @@
-/** Dialogue box, popups, objective banner and end-of-act screen shared by the story scenes. */
+/**
+ * Dialogue box, popups, objective banner and end-of-act screen shared by all story scenes.
+ * Fully wired to src/ui/tokens.css for visual parity with STREET.
+ */
+
 export type Speaker = string;
+
+export type Mood = 'neutral' | 'worried' | 'delighted' | 'horrified' | 'deadpan' | 'smug';
 
 export interface Line {
   who: Speaker;
   text: string;
   whisper?: boolean;
   shout?: boolean;
+  mood?: Mood;
+  sfx?: string;
   action?: () => void;
 }
 
@@ -19,10 +27,11 @@ export interface EndScreen {
 }
 
 export class StoryUi {
-  private root = document.createElement('div');
+  public root = document.createElement('div');
   private dialog: HTMLElement;
   private name: HTMLElement;
   private text: HTMLElement;
+  private prompt: HTMLElement;
   private pop: HTMLElement;
   private objective: HTMLElement;
   private chain: HTMLElement;
@@ -30,26 +39,35 @@ export class StoryUi {
   private lines: Line[] = [];
   private index = 0;
   private done: (() => void) | null = null;
-  private lastAdvance = 0;
+  public lastAdvance = 0;
   private popTimer = 0;
 
+  // Typewriter state
+  private typewriterTimer = 0;
+  private currentFullText = '';
+  private displayedLength = 0;
+  private isTypewriting = false;
+
   constructor(private colors: Record<string, string>) {
-    this.root.style.cssText = 'position:fixed;inset:0;pointer-events:none;font-family:Georgia,serif;color:#fff;z-index:10';
+    this.root.className = 'story-ui-root';
+    this.root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:var(--z-hud);';
     this.root.innerHTML = `
-      <div data-id="objective" style="position:absolute;left:50%;top:14px;transform:translateX(-50%);max-width:min(560px,90vw);padding:9px 16px;border-radius:12px;background:rgba(20,26,40,.82);border:1.5px solid rgba(255,255,255,.45);font:600 13px system-ui,sans-serif;text-align:center;display:none"></div>
-      <div data-id="chain" style="position:absolute;left:50%;top:62px;transform:translateX(-50%);font:700 13px system-ui,sans-serif;letter-spacing:1.5px;text-shadow:0 2px 6px #000;opacity:0;transition:opacity .25s"></div>
-      <div data-id="pop" style="position:absolute;left:50%;top:26%;transform:translateX(-50%);font:italic 700 20px Georgia,serif;opacity:0;text-shadow:0 2px 10px #000;transition:opacity .4s;text-align:center;max-width:90vw"></div>
-      <div data-id="dialog" style="position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(660px,92vw);padding:14px 18px;border-radius:16px;background:rgba(14,18,30,.9);border:1px solid rgba(255,255,255,.28);display:none;pointer-events:auto">
-        <div data-id="name" style="font:700 12px system-ui,sans-serif;letter-spacing:1.4px;margin-bottom:6px;text-transform:uppercase"></div>
-        <div data-id="text" style="font-size:19px;line-height:1.4"></div>
-        <div style="text-align:right;font:11px system-ui,sans-serif;opacity:.55;margin-top:6px">Space / click &#9656;</div>
+      <div data-id="objective" class="story-objective-banner" style="display:none"></div>
+      <div data-id="chain" style="position:absolute;left:50%;top:64px;transform:translateX(-50%);font-family:var(--font-ui);font-weight:var(--fw-heavy);font-size:var(--fs-label);letter-spacing:var(--tracking-widest);text-shadow:0 2px 8px #000;opacity:0;transition:opacity .25s;color:#fff;pointer-events:none"></div>
+      <div data-id="pop" class="story-pop-text"></div>
+      <div data-id="dialog" class="story-dialogue-card" style="display:none">
+        <div data-id="name" class="story-speaker-name"></div>
+        <div data-id="text" class="story-dialogue-text"></div>
+        <div data-id="prompt" class="story-dialogue-prompt">Space / Tap to continue &#9656;</div>
       </div>
-      <div data-id="end" style="position:absolute;inset:0;background:rgba(4,5,12,.88);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:auto;padding:24px"></div>`;
+      <div data-id="end" class="story-end-screen" style="display:none"></div>`;
     document.body.appendChild(this.root);
+
     const q = (id: string) => this.root.querySelector(`[data-id="${id}"]`) as HTMLElement;
     this.dialog = q('dialog');
     this.name = q('name');
     this.text = q('text');
+    this.prompt = q('prompt');
     this.pop = q('pop');
     this.objective = q('objective');
     this.chain = q('chain');
@@ -61,8 +79,11 @@ export class StoryUi {
         this.advance();
       }
     });
-    window.addEventListener('mousedown', () => {
-      if (this.active) this.advance();
+
+    window.addEventListener('pointerdown', (e) => {
+      if (this.active && !this.end.contains(e.target as Node)) {
+        this.advance();
+      }
     });
   }
 
@@ -79,22 +100,65 @@ export class StoryUi {
   }
 
   private show() {
+    if (this.index >= this.lines.length) return;
     const line = this.lines[this.index];
-    this.dialog.style.display = 'block';
-    this.name.textContent = line.who;
-    this.name.style.color = this.colors[line.who] ?? '#fff';
-    this.text.textContent = line.text;
+    this.dialog.style.display = 'flex';
+
+    // Format Speaker Name & Chip
+    const color = this.colors[line.who] ?? '#fff';
+    this.name.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};box-shadow:0 0 8px ${color}"></span><span>${line.who}</span>`;
+    this.name.style.color = color;
+
+    // Typewriter reveal
+    this.currentFullText = line.text;
+    this.text.className = `story-dialogue-text ${line.whisper ? 'whisper' : ''} ${line.shout ? 'shout' : ''}`;
     this.text.style.fontStyle = line.who === 'Narrator' || line.whisper ? 'italic' : 'normal';
-    this.text.style.fontSize = line.whisper ? '15px' : line.shout ? '22px' : '19px';
-    this.text.style.fontWeight = line.shout ? '800' : '400';
-    this.text.style.opacity = line.whisper ? '0.82' : '1';
+
+    // Cancel prior typewriter
+    window.clearTimeout(this.typewriterTimer);
+    this.displayedLength = 0;
+    this.isTypewriting = true;
+    this.stepTypewriter();
+
     line.action?.();
   }
 
-  private advance() {
-    if (!this.active || performance.now() - this.lastAdvance < 280) return;
+  private stepTypewriter() {
+    if (!this.isTypewriting) return;
+    this.displayedLength += 2; // smooth 2-char chunks for swift reading
+    if (this.displayedLength >= this.currentFullText.length) {
+      this.text.textContent = this.currentFullText;
+      this.isTypewriting = false;
+      return;
+    }
+
+    this.text.textContent = this.currentFullText.slice(0, this.displayedLength);
+
+    // Dynamic pace with punctuation pauses
+    const lastChar = this.currentFullText[this.displayedLength - 1];
+    let delay = 18;
+    if (lastChar === '.' || lastChar === '!' || lastChar === '?') delay = 140;
+    else if (lastChar === ',' || lastChar === ';' || lastChar === ':') delay = 80;
+
+    this.typewriterTimer = window.setTimeout(() => this.stepTypewriter(), delay);
+  }
+
+  public advance() {
+    if (!this.active) return;
+
+    // If typewriter is still playing, first tap finishes the line immediately
+    if (this.isTypewriting) {
+      window.clearTimeout(this.typewriterTimer);
+      this.isTypewriting = false;
+      this.text.textContent = this.currentFullText;
+      this.lastAdvance = performance.now();
+      return;
+    }
+
+    if (performance.now() - this.lastAdvance < 220) return;
     this.lastAdvance = performance.now();
     this.index++;
+
     if (this.index >= this.lines.length) {
       this.lines = [];
       this.dialog.style.display = 'none';
@@ -106,11 +170,19 @@ export class StoryUi {
     }
   }
 
-  public popup(text: string, ms = 1400) {
+  public setPrompt(text: string) {
+    this.prompt.textContent = text;
+  }
+
+  public popup(text: string, ms = 1500) {
     this.pop.textContent = text;
-    this.pop.style.opacity = '0.95';
+    this.pop.style.opacity = '1';
+    this.pop.style.transform = 'translateX(-50%) scale(1.04)';
     window.clearTimeout(this.popTimer);
-    this.popTimer = window.setTimeout(() => (this.pop.style.opacity = '0'), ms);
+    this.popTimer = window.setTimeout(() => {
+      this.pop.style.opacity = '0';
+      this.pop.style.transform = 'translateX(-50%) scale(1)';
+    }, ms);
   }
 
   public setObjective(text: string | null) {
@@ -127,17 +199,24 @@ export class StoryUi {
     this.setObjective(null);
     this.end.style.display = 'flex';
     this.end.innerHTML = `
-      <div style="font:700 13px system-ui,sans-serif;letter-spacing:3px;opacity:.7">${e.act} COMPLETE</div>
-      <h1 style="font-size:clamp(28px,6vw,52px);margin:10px 0 6px;max-width:90vw">${e.title}</h1>
-      <p style="font-style:italic;opacity:.8;max-width:540px;margin:0 0 6px">${e.blurb}</p>
-      <p style="opacity:.65;font:13px system-ui,sans-serif;margin:0 0 22px">${e.stats}</p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
-        ${e.nextHref ? `<a href="${e.nextHref}" style="font:700 14px system-ui,sans-serif;letter-spacing:1px;padding:12px 22px;border-radius:999px;border:1.5px solid #fff;background:#3a4668;color:#fff;text-decoration:none">${e.nextLabel ?? 'CONTINUE'}</a>` : ''}
-        <button data-id="replay" style="font:700 14px system-ui,sans-serif;letter-spacing:1px;padding:12px 22px;border-radius:999px;border:1.5px solid rgba(255,255,255,.7);background:#252c40;color:#fff;cursor:pointer">REPLAY</button>
-        <button data-id="street" style="font:700 14px system-ui,sans-serif;letter-spacing:1px;padding:12px 22px;border-radius:999px;border:1.5px solid rgba(255,255,255,.5);background:transparent;color:#fff;cursor:pointer">BACK TO THE STREET</button>
+      <div class="act-tag">${e.act} COMPLETE</div>
+      <h1 class="act-title">${e.title}</h1>
+      <p class="act-blurb">${e.blurb}</p>
+      <p class="act-stats">${e.stats}</p>
+      <div class="btn-group">
+        ${e.nextHref ? `<a href="${e.nextHref}" class="hud-btn hud-btn-primary">${e.nextLabel ?? 'CONTINUE'}</a>` : ''}
+        <button data-id="replay" class="hud-btn hud-btn-secondary">REPLAY</button>
+        <button data-id="street" class="hud-btn hud-btn-ghost">BACK TO THE STREET</button>
       </div>`;
+
     (this.end.querySelector('[data-id="replay"]') as HTMLElement).addEventListener('click', () => window.location.reload());
     (this.end.querySelector('[data-id="street"]') as HTMLElement).addEventListener('click', () => (window.location.href = window.location.pathname));
     if (document.exitPointerLock) document.exitPointerLock();
+  }
+
+  public dispose() {
+    window.clearTimeout(this.typewriterTimer);
+    window.clearTimeout(this.popTimer);
+    this.root.remove();
   }
 }

@@ -141,6 +141,8 @@ export class Act1 extends VoxelGame {
     this.ui = this.buildUi();
     this.bindStoryInput();
 
+    (window as unknown as { __act1?: Act1 }).__act1 = this;
+
     this.frozen = true;
     this.runIntro();
   }

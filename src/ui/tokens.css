@@ -1,0 +1,340 @@
+/* ==========================================================================
+   DAVE FART ROCKET: DESIGN TOKENS
+   Authoritative scale for STREET, VOXEL, and SAGA (S1-S5)
+   ========================================================================== */
+
+:root {
+  /* --- Font Stacks --- */
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-story: Georgia, "Times New Roman", Times, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* --- Modular Type Scale (Responsive clamp, minimum 11px) --- */
+  --fs-caption: clamp(11px, 1.25vw, 12px);
+  --fs-label: clamp(12px, 1.4vw, 13px);
+  --fs-body: clamp(15px, 1.75vw, 17px);
+  --fs-body-lg: clamp(17px, 2.1vw, 19px);
+  --fs-title-s: clamp(20px, 2.5vw, 24px);
+  --fs-title: clamp(28px, 3.6vw, 36px);
+  --fs-display: clamp(40px, 5.5vw, 56px);
+  --fs-numeric: clamp(22px, 3vw, 26px);
+
+  /* --- Font Weights --- */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-heavy: 800;
+
+  /* --- Line Heights --- */
+  --lh-tight: 1.15;
+  --lh-display: 1.2;
+  --lh-body: 1.45;
+  --lh-relaxed: 1.6;
+
+  /* --- Letter Spacing --- */
+  --tracking-normal: 0;
+  --tracking-wide: 1px;
+  --tracking-wider: 1.4px;
+  --tracking-widest: 2.2px;
+
+  /* --- Glass Surface Tokens --- */
+  --hud-glass-bg: rgba(28, 34, 48, 0.88);
+  --hud-glass-bg-subtle: rgba(20, 26, 40, 0.82);
+  --hud-glass-bg-dark: rgba(10, 14, 24, 0.92);
+  --hud-glass-border: rgba(255, 255, 255, 0.45);
+  --hud-glass-border-subtle: rgba(255, 255, 255, 0.25);
+  --hud-glass-border-focus: rgba(255, 255, 255, 0.75);
+  --hud-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --hud-radius: 16px;
+  --hud-radius-sm: 10px;
+  --hud-radius-pill: 999px;
+  --hud-blur: 12px;
+
+  /* --- Accent & Status Colors (dB acoustic ramp) --- */
+  --col-accent-green: #2ecc71;
+  --col-accent-emerald: #34d399;
+  --col-accent-yellow: #f1c40f;
+  --col-accent-amber: #f59e0b;
+  --col-accent-orange: #ff632b;
+  --col-accent-red: #e74c3c;
+  --col-accent-rose: #f43f5e;
+  --col-accent-cyan: #4ad0ff;
+
+  /* --- Cast / Speaker Accent Colors --- */
+  --col-speaker-narrator: #9fb4cf;
+  --col-speaker-dave: #ffd166;
+  --col-speaker-pim: #7fd3ff;
+  --col-speaker-captain: #ff9fa8;
+  --col-speaker-elder: #e2bbfd;
+  --col-speaker-chef: #ffb471;
+  --col-speaker-toot: #ffe873;
+
+  /* --- Z-Index Hierarchy --- */
+  --z-hud: 10;
+  --z-altimeter: 16;
+  --z-overlay: 20;
+  --z-modal: 30;
+  --z-toast: 40;
+}
+
+/* ==========================================================================
+   REUSABLE UI COMPONENTS (STREET & SAGA COMPATIBLE)
+   ========================================================================== */
+
+/* Glass Card */
+.hud-glass-card {
+  background: var(--hud-glass-bg);
+  backdrop-filter: blur(var(--hud-blur));
+  -webkit-backdrop-filter: blur(var(--hud-blur));
+  border: 1.5px solid var(--hud-glass-border);
+  border-radius: var(--hud-radius);
+  box-shadow: var(--hud-glass-shadow);
+  color: #fff;
+  font-family: var(--font-ui);
+}
+
+/* Standard Pill Button */
+.hud-btn {
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-wide);
+  padding: 12px 24px;
+  min-height: 44px;
+  border-radius: var(--hud-radius-pill);
+  border: 1.5px solid var(--hud-glass-border);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.hud-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: var(--hud-glass-border-focus);
+  transform: translateY(-1px);
+}
+.hud-btn:active {
+  transform: translateY(1px) scale(0.98);
+  background: rgba(255, 255, 255, 0.16);
+}
+.hud-btn:focus-visible {
+  outline: 2px solid var(--col-accent-emerald);
+  outline-offset: 2px;
+}
+.hud-btn-primary {
+  background: linear-gradient(135deg, var(--col-accent-orange), #ff8a5c);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 18px rgba(255, 99, 43, 0.45);
+}
+.hud-btn-primary:hover {
+  background: linear-gradient(135deg, #ff723f, #ffa07a);
+  box-shadow: 0 6px 24px rgba(255, 99, 43, 0.65);
+}
+.hud-btn-secondary {
+  background: rgba(45, 55, 75, 0.85);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.hud-btn-secondary:hover {
+  background: rgba(60, 72, 98, 0.95);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+.hud-btn-ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.hud-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Objective Banner (Top Centered) */
+.story-objective-banner {
+  position: absolute;
+  left: 50%;
+  top: max(14px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  max-width: min(560px, 92vw);
+  padding: 8px 18px;
+  border-radius: var(--hud-radius-sm);
+  background: var(--hud-glass-bg-subtle);
+  border: 1.5px solid var(--hud-glass-border-subtle);
+  backdrop-filter: blur(var(--hud-blur));
+  -webkit-backdrop-filter: blur(var(--hud-blur));
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: var(--z-hud);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Dialogue Box */
+.story-dialogue-card {
+  position: absolute;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(660px, 92vw);
+  padding: 16px 22px;
+  border-radius: var(--hud-radius);
+  background: var(--hud-glass-bg-dark);
+  border: 1.5px solid var(--hud-glass-border-subtle);
+  backdrop-filter: blur(var(--hud-blur));
+  -webkit-backdrop-filter: blur(var(--hud-blur));
+  box-shadow: var(--hud-glass-shadow);
+  pointer-events: auto;
+  z-index: var(--z-overlay);
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.story-speaker-name {
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-heavy);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.story-dialogue-text {
+  font-family: var(--font-story);
+  font-size: var(--fs-body-lg);
+  line-height: var(--lh-body);
+  color: #fff;
+}
+.story-dialogue-text.whisper {
+  font-size: var(--fs-body);
+  font-style: italic;
+  opacity: 0.85;
+}
+.story-dialogue-text.shout {
+  font-size: var(--fs-title-s);
+  font-weight: var(--fw-heavy);
+  letter-spacing: 0.5px;
+}
+.story-dialogue-prompt {
+  font-family: var(--font-ui);
+  font-size: var(--fs-caption);
+  opacity: 0.6;
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* Onomatopoeia & Comic Popups */
+.story-pop-text {
+  position: absolute;
+  left: 50%;
+  top: 26%;
+  transform: translateX(-50%);
+  font-family: var(--font-story);
+  font-weight: var(--fw-bold);
+  font-style: italic;
+  font-size: var(--fs-title-s);
+  color: var(--col-accent-yellow);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95);
+  text-align: center;
+  max-width: 90vw;
+  pointer-events: none;
+  z-index: var(--z-overlay);
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* End of Act Screen Overlay */
+.story-end-screen {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 5, 12, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  pointer-events: auto;
+  z-index: var(--z-modal);
+  color: #fff;
+}
+.story-end-screen .act-tag {
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-heavy);
+  letter-spacing: var(--tracking-widest);
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+.story-end-screen .act-title {
+  font-family: var(--font-story);
+  font-size: var(--fs-title);
+  font-weight: var(--fw-bold);
+  margin: 12px 0 8px;
+  line-height: var(--lh-tight);
+}
+.story-end-screen .act-blurb {
+  font-family: var(--font-story);
+  font-style: italic;
+  font-size: var(--fs-body);
+  opacity: 0.85;
+  max-width: 540px;
+  margin: 0 0 14px;
+  line-height: var(--lh-relaxed);
+}
+.story-end-screen .act-stats {
+  font-family: var(--font-ui);
+  font-size: var(--fs-caption);
+  opacity: 0.75;
+  margin: 0 0 28px;
+  font-variant-numeric: tabular-nums;
+}
+.story-end-screen .btn-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Toast Notification */
+.hud-toast {
+  position: fixed;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--hud-glass-bg-dark);
+  border: 1.5px solid var(--hud-glass-border);
+  border-radius: var(--hud-radius-sm);
+  padding: 10px 18px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  z-index: var(--z-toast);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.hud-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Tabular numbers for counters */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
