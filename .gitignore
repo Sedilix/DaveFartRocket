@@ -25,3 +25,8 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# TypeScript emit artifacts in source
+src/**/*.js
+src/**/*.js.map
+

@@ -943,3 +943,153 @@ html, body {
     transform: none;
   }
 }
+
+/* ==========================================================================
+   ALTIMETER: right-hand log-scale gauge
+   ========================================================================== */
+.hud-altimeter {
+  position: absolute;
+  right: 14px;
+  top: 30%;
+  height: 34%;
+  min-height: 150px;
+  width: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px 10px;
+  border-radius: 14px;
+  background: rgba(28, 34, 48, 0.78);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+  opacity: 0;
+  transform: translateX(14px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+  z-index: 16;
+}
+.hud-altimeter.visible {
+  opacity: 1;
+  transform: none;
+}
+.alt-title {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  opacity: 0.7;
+}
+.alt-value {
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.alt-track {
+  position: relative;
+  flex: 1;
+  width: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.alt-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  border-radius: 4px;
+  background: linear-gradient(0deg, #2ecc71, #f1c40f 55%, #e74c3c);
+  transition: height 0.15s linear;
+}
+.alt-tick {
+  position: absolute;
+  left: -4px;
+  width: 16px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.6);
+}
+.alt-tick i {
+  position: absolute;
+  right: 20px;
+  top: -6px;
+  font-style: normal;
+  font-size: 8px;
+  font-weight: 700;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.hud-root.cinematic .hud-altimeter,
+#hud-root.cinematic .hud-altimeter {
+  opacity: 0;
+}
+
+/* ==========================================================================
+   RELEASE button as a butt: two cheeks ("UU") with gas puffing out of the crack
+   ========================================================================== */
+.release-button {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+/* The cheeks */
+.release-button::before,
+.release-button::after {
+  content: '';
+  position: absolute;
+  top: 6%;
+  width: 62%;
+  height: 78%;
+  border-radius: 50% 50% 54% 54% / 46% 46% 58% 58%;
+  background: radial-gradient(circle at 36% 28%, #ffd2b8 0%, #f4a08a 52%, #cf6a62 100%);
+  box-shadow: inset 0 -5px 8px rgba(150, 40, 50, 0.45), 0 4px 12px rgba(0, 0, 0, 0.45);
+  z-index: 0;
+}
+.release-button::before { left: -2%; }
+.release-button::after { right: -2%; }
+/* The crack, drawn on top of both cheeks */
+.release-text {
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(10, 14, 24, 0.72);
+  white-space: nowrap;
+}
+.release-button .gas {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(196, 232, 60, 0.95), rgba(150, 200, 40, 0.55) 60%, rgba(150, 200, 40, 0));
+  filter: blur(1.5px);
+  opacity: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: gas-puff 2.1s ease-out infinite;
+}
+.release-button .gas.g2 { animation-delay: 0.7s; width: 18px; height: 18px; }
+.release-button .gas.g3 { animation-delay: 1.4s; width: 26px; height: 26px; }
+@keyframes gas-puff {
+  0% { transform: translate(0, 0) scale(0.3); opacity: 0; }
+  12% { opacity: 0.9; }
+  100% { transform: translate(-46px, -34px) scale(1.9); opacity: 0; }
+}
+/* Pressing it blasts a big burst */
+.release-button:active .gas {
+  animation-duration: 0.55s;
+  animation-delay: 0s;
+}
+.release-button.cooling::before,
+.release-button.cooling::after { filter: grayscale(0.8); }
+@media (prefers-reduced-motion: reduce) {
+  .release-button .gas { animation: none; opacity: 0.35; transform: translate(-18px, -14px); }
+}

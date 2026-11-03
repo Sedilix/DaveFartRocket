@@ -472,6 +472,25 @@ export class HudController {
     this.onomatopoeiaElem.classList.add('pop-anim');
   }
 
+  private altitudeShown = -1;
+
+  /** Altimeter: log-scale fill (so the first hops and the final 30 km both read), metres below 10 km, then km. */
+  public updateAltitude(meters: number) {
+    const alt = Math.max(0, meters);
+    if (Math.abs(alt - this.altitudeShown) < 0.5 && this.altitudeShown >= 0) return;
+    this.altitudeShown = alt;
+    const el = (this.altEl ??= this.container.querySelector<HTMLElement>('#hud-altimeter')!);
+    const value = (this.altValueEl ??= this.container.querySelector<HTMLElement>('#alt-value')!);
+    const fill = (this.altFillEl ??= this.container.querySelector<HTMLElement>('#alt-fill')!);
+    el.classList.toggle('visible', alt > 1.5);
+    value.textContent = alt < 10000 ? `${Math.round(alt).toLocaleString('en-US')} m` : `${(alt / 1000).toFixed(1)} km`;
+    fill.style.height = `${(Math.log10(1 + alt) / Math.log10(1 + 30000)) * 100}%`;
+  }
+
+  private altEl: HTMLElement | null = null;
+  private altValueEl: HTMLElement | null = null;
+  private altFillEl: HTMLElement | null = null;
+
   public updateTensionRing(timer: number, maxTimer: number) {
     const progress = Math.min(1, Math.max(0, timer / maxTimer));
     const offset = RING_CIRCUMFERENCE * (1 - progress);
@@ -499,6 +518,18 @@ export class HudController {
   private getTemplate(): string {
     const circumference = RING_CIRCUMFERENCE;
     return `
+      <!-- ALTIMETER: log-scale gauge, fades in once Dave leaves the ground -->
+      <div id="hud-altimeter" class="hud-altimeter" aria-hidden="true">
+        <span class="alt-title">ALTITUDE</span>
+        <span id="alt-value" class="alt-value">0 m</span>
+        <div class="alt-track">
+          <div id="alt-fill" class="alt-fill"></div>
+          <span class="alt-tick" style="bottom:44.8%"><i>100 m</i></span>
+          <span class="alt-tick" style="bottom:67%"><i>1 km</i></span>
+          <span class="alt-tick" style="bottom:89.3%"><i>10 km</i></span>
+        </div>
+      </div>
+
       <!-- TOP ZONE: Signature Dark Glass HUD Card -->
       <div class="hud-top-zone">
         <div class="hud-glass-card">
@@ -592,6 +623,7 @@ export class HudController {
               ></circle>
             </svg>
             <button id="release-btn" class="release-button" aria-label="Release Fart">
+              <span class="gas g1"></span><span class="gas g2"></span><span class="gas g3"></span>
               <span class="release-text">RELEASE</span>
             </button>
           </div>
