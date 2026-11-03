@@ -7,6 +7,7 @@ import { PlanetEarth } from '../entities/PlanetEarth';
 import { CameraController } from './CameraController';
 import { fartAudio } from '../audio/FartSynth';
 import { endGameMusic } from '../audio/EndGameMusic';
+import { quality } from './QualityManager';
 import { useGameStore } from './gameState';
 import { getMilestone } from '../data/milestones';
 import { InputManager } from '../ui/InputManager';
@@ -65,7 +66,6 @@ export class GameLoop {
   // Lighting
   private dirLight!: THREE.DirectionalLight;
   private shadowTexel = SHADOW_EXTENT / 2048;
-  private readonly isTouch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
   // Light-space basis, used to snap the shadow frustum to the shadow-map texel grid
   private lightRight = new THREE.Vector3();
   private lightUp = new THREE.Vector3();
@@ -132,11 +132,15 @@ export class GameLoop {
     this.scene.background = new THREE.Color(0x6ca0dc); // Daytime street blue
     this.scene.fog = new THREE.FogExp2(0x6ca0dc, 0.003);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: quality.tier === 'high',
+      powerPreference: 'high-performance',
+      stencil: false,
+      alpha: false
+    });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    // Antialiasing at DPR 2 is a big fill-rate cost on phones
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isTouch ? 1.5 : 2));
-    this.renderer.shadowMap.enabled = true;
+    quality.bindRenderer(this.renderer);
+    this.renderer.shadowMap.enabled = quality.profile.shadows;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
@@ -251,7 +255,7 @@ export class GameLoop {
     this.dirLight.position.copy(LIGHT_OFFSET);
     this.dirLight.castShadow = true;
     // A phone does not need 2048 (and a high-DPR screen is already fill-rate bound)
-    const mapSize = this.isTouch || window.devicePixelRatio >= 2 ? 1024 : 2048;
+    const mapSize = quality.profile.shadowMapSize;
     this.shadowTexel = SHADOW_EXTENT / mapSize;
     this.dirLight.shadow.mapSize.width = mapSize;
     this.dirLight.shadow.mapSize.height = mapSize;
@@ -300,7 +304,7 @@ export class GameLoop {
     // Audio synth and Dave VFX (cosmetic: failures are logged, never fatal)
     try {
       fartAudio.playFart(fartNumber);
-      this.dave.triggerFartVFX(fartNumber);
+      this.dave.triggerFartVFX(fartNumber, quality.profile.maxGasPuffs);
     } catch (err) {
       console.error('Fart effects failed', err);
     }
@@ -387,7 +391,7 @@ export class GameLoop {
         cam.z += 150 * Math.min(e.t, ENDING_MAX_T); // pull back to keep the debris in frame
         if (!e.blasted) {
           e.blasted = true;
-          this.earth.shatterEarth();
+          this.earth.shatterEarth(quality.profile.shatterShards);
           fartAudio.playShatter();
           this.cameraController.triggerShake(16); // in cinematic shots this jitters the aim, not the position
           this.setWhiteout(WHITEOUT_PEAK);
@@ -498,6 +502,7 @@ export class GameLoop {
   private update(timestamp: number) {
     if (this.lastTime < 0) this.lastTime = timestamp;
     const dt = Math.max(0, Math.min((timestamp - this.lastTime) * 0.001, 0.1));
+    quality.recordFrame(dt);
     this.lastTime = timestamp;
 
     let store = useGameStore.getState();

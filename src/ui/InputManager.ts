@@ -50,8 +50,27 @@ export class InputManager {
     // return false, or return nothing: either way, a fart that never advanced the counter was rejected.
     const before = useGameStore.getState().fartNumber;
     if (this.onReleaseCallback() === false) return;
-    if (useGameStore.getState().fartNumber === before) return;
+    const after = useGameStore.getState().fartNumber;
+    if (after === before) return;
+    this.triggerHaptic(after);
     this.startCooldown();
+  }
+
+  /** Triggers progressive haptic feedback on devices with vibration support */
+  public triggerHaptic(fartNumber: number) {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        if (fartNumber >= 25) {
+          navigator.vibrate([120, 60, 220, 80, 500]);
+        } else if (fartNumber >= 16) {
+          navigator.vibrate([45, 30, 85, 30, 110]);
+        } else if (fartNumber >= 9) {
+          navigator.vibrate([35, 25, 55]);
+        } else {
+          navigator.vibrate(18);
+        }
+      } catch {}
+    }
   }
 
   private endingPlaying(): boolean {
@@ -227,6 +246,7 @@ export class InputManager {
 
   public bindReleaseButton(btn: HTMLElement) {
     this.releaseBtn = btn;
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
     btn.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       e.stopPropagation();

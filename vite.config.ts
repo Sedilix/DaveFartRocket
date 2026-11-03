@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // .ts first so a stray tsc-emitted .js can never shadow its source in dev
   resolve: {
     extensions: ['.ts', '.mjs', '.js', '.json']
   },
@@ -10,6 +9,22 @@ export default defineConfig({
     host: true
   },
   build: {
-    target: 'esnext'
+    target: 'esnext',
+    chunkSizeWarningLimit: 2500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three')) {
+            return 'three-vendor';
+          }
+          if (id.includes('@dimforge/rapier3d-compat')) {
+            return 'rapier-vendor';
+          }
+          if (id.includes('zustand')) {
+            return 'state-vendor';
+          }
+        }
+      }
+    }
   }
 });

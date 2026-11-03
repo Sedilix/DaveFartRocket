@@ -289,7 +289,7 @@ export class Dave {
   /**
    * Spawns propulsion low-poly gas burst directly beneath Dave
    */
-  public triggerFartVFX(fartNumber: number) {
+  public triggerFartVFX(fartNumber: number, maxPuffs = 22) {
     this.shockTimer = 1.8; // Open mouth in shock
 
     // 1. Translucent yellow-green gas ball beneath Dave. It grows linearly to a capped radius and fades,
@@ -325,7 +325,7 @@ export class Dave {
     });
 
     // 2. Trailing olive-green (#6b7c32) faceted smoke puffs downward
-    const puffCount = Math.min(22, 4 + fartNumber);
+    const puffCount = Math.min(maxPuffs, 4 + fartNumber);
     for (let i = 0; i < puffCount; i++) {
       const puffSize = 0.25 * (0.8 + Math.random() * 0.7) * (1 + scaleFactor * 0.25);
       const puffMat = this.puffMatPool.pop() ?? this.makePuffMat();

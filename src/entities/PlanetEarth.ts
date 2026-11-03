@@ -225,7 +225,7 @@ export class PlanetEarth {
     this.rippleWaveTime = 0;
   }
 
-  public shatterEarth() {
+  public shatterEarth(maxShards?: number) {
     if (this.isShattered) return;
     this.isShattered = true;
     this.blastTime = 0;
@@ -236,7 +236,13 @@ export class PlanetEarth {
     this.shardsGroup.visible = true;
 
     // 58 big tectonic chunks (built in the constructor) burst outward into deep space
-    for (const { mesh: shard, velocity, rotVelocity } of this.shards) {
+    const count = maxShards ? Math.min(maxShards, this.shards.length) : this.shards.length;
+    for (let i = 0; i < this.shards.length; i++) {
+      const { mesh: shard, velocity, rotVelocity } = this.shards[i];
+      if (i >= count) {
+        shard.visible = false;
+        continue;
+      }
       shard.visible = true;
       shard.rotation.set(0, 0, 0);
 
