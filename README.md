@@ -30,10 +30,41 @@ Meet Dave. He's having a perfectly normal Tuesday walking down a city avenue. Ex
 
 ---
 
-## 🕹️ Controls
-- **Walk / Steer**: Left virtual joystick (touch) or `W` / `A` / `S` / `D` or Arrow Keys (keyboard).
-- **Manual Fart Release**: Tap the circular `RELEASE` button or press `Space` / `Enter`.
-- **Music Preview**: Click `🎵 Preview Music` in the HUD or press `M` on the keyboard to toggle the end-game music.
+## 🌌 The Complete Saga & Entry Modes
+
+The game features both the original viral Street Level and the complete 5-Act narrative sequel and Voxel Sandbox:
+
+| URL Mode | Scene / Title | Description |
+| --- | --- | --- |
+| `/` | **STREET (Prologue)** | The original 25-fart city street rocket ascent, altimeter gauge, and Earth shatter. |
+| `/?mode=menu` | **MAIN MENU** | Act select, cross-act casualties tally, achievements showcase, and settings modal. |
+| `/?mode=act1` | **ACT I: S1 Ship** | Aboard the *Whisper*. First contact with the delicate Quell, fragile heirlooms, and Pim's hum. |
+| `/?mode=act2` | **ACT II: S2 Nom** | Moon of Nom. Chain fart-boosts across sacred ravines and sound the Great Gust Horn. |
+| `/?mode=act3` | **ACT III: S3 Frostbite** | Grand Frostbite Hotel. Out-of-order lift shaft climbing, Chef Glorb's confession, and ignored stairs. |
+| `/?mode=act4` | **ACT IV: S4 Desert** | Desert of Silence. Outrun the advancing wall of silence and Elder Sibilance's vault ship. |
+| `/?mode=act5` | **ACT V: S5 Source** | The Bean Tree finale. Inverted tension ring: hold your nerve for the silent release. |
+| `/?mode=voxel` | **VOXEL (Epilogue)** | Procedural voxel sandbox: day/night cycle, Rebuild Earth blueprint checklist (Deli, Loft, Garden). |
+
+---
+
+## 🕹️ Universal Controls
+
+- **Move / Steer**: Left virtual joystick (touch), `WASD` / Arrow Keys (keyboard), or Left Stick (gamepad).
+- **Look**: Touch drag on right screen, Mouse look (pointer lock with drag fallback), or Right Stick (gamepad).
+- **Jump / Boost**: `Space` / `A` button / on-screen `JUMP`.
+- **Fart / Action**: `F` / `X` or `RT` button / on-screen `FART`.
+- **Hum (S1)**: Hold `H` / on-screen `HUM` (Pim hums to sustain the Hush Field).
+- **Advance Dialogue**: Click anywhere, `Space`, `Enter`, or gamepad `A`.
+- **Pause Menu & Settings**: `Escape` or floating `MENU` pill. Supports volume sliders, look sensitivity, invert Y, graphics tiers, and left-handed layout.
+
+---
+
+## 🧪 Testing & Integrity
+
+Run the automated smoke test suite to verify all chunks, scripts, tokens, and build artifacts:
+```bash
+npm run smoke
+```
 
 ---
 
