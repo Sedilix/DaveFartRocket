@@ -179,6 +179,8 @@ export class Act3 extends VoxelGame {
           act: 'ACT III',
           title: 'Mind the Ledges',
           blurb: 'Next: Act IV, The Elder\'s Offer. Where the desert is quiet, the vault is quieter, and Pim makes a speech.',
+          nextHref: '?mode=act4',
+          nextLabel: 'CONTINUE TO ACT IV',
           stats: `Fart-jumps: <b>${this.fartsTotal}</b> &nbsp;·&nbsp; Times Dave fell down the shaft: <b>${this.falls}</b> &nbsp;·&nbsp; Stairs discovered: <b>0</b>`
         });
       }
