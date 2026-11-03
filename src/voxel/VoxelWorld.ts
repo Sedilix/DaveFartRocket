@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { B, isSolid } from './blocks';
 import { CHUNK, WORLD_H, generateChunk, idx } from './terrain';
 import { meshChunk, MeshData } from './mesher';
+import { voxelAtlas } from './atlas';
 
 export class Chunk {
   public data = new Uint8Array(CHUNK * WORLD_H * CHUNK);
@@ -31,11 +32,17 @@ export class VoxelWorld {
   public radius = 6;
   private chunks = new Map<string, Chunk>();
   private saved = new Map<string, Uint8Array>(); // edited chunks that were unloaded
-  private solidMat = new THREE.MeshBasicMaterial({ vertexColors: true });
-  private waterMat = new THREE.MeshBasicMaterial({
+  private solidMat = new THREE.MeshLambertMaterial({
+    map: voxelAtlas.texture,
     vertexColors: true,
+    reflectivity: 0.15
+  });
+  private waterMat = new THREE.MeshStandardMaterial({
+    color: 0x3b82d6,
     transparent: true,
-    opacity: 0.72,
+    opacity: 0.75,
+    roughness: 0.12,
+    metalness: 0.18,
     depthWrite: false
   });
 
@@ -172,10 +179,14 @@ export class VoxelWorld {
     if (!data) return null;
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(data.positions, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(data.normals, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(data.uvs, 2));
     g.setAttribute('color', new THREE.BufferAttribute(data.colors, 3));
     g.setIndex(new THREE.BufferAttribute(data.indices, 1));
     g.computeBoundingSphere();
     const m = new THREE.Mesh(g, mat);
+    m.castShadow = true;
+    m.receiveShadow = true;
     m.position.set(c.cx * CHUNK, 0, c.cz * CHUNK);
     m.matrixAutoUpdate = false;
     m.updateMatrix();

@@ -6,6 +6,7 @@ import { Quell } from './Quell';
 import { StoryUi } from './StoryUi';
 import { DESERT_GROUND, FINISH_X, desertGenerator } from './desert';
 import { input } from '../input/UniversalInput';
+import { AmbientParticles } from '../vfx/AmbientParticles';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -22,6 +23,7 @@ export class Act4 extends VoxelGame {
   private ui: StoryUi;
   private pim = new Quell({ height: 1.15, body: 0xb9a7e8, accent: 0xff9ccf });
   private elder = new Quell({ height: 2.7, body: 0xeef1f7, accent: 0x9fb4cf, hat: 0xc9d4ea });
+  private ambient = new AmbientParticles('desert', 280);
   private bubble: THREE.Mesh;
   private silence: THREE.Mesh;
   private ship: THREE.Mesh;
@@ -58,6 +60,7 @@ export class Act4 extends VoxelGame {
     this.elder.group.position.set(16, DESERT_GROUND + 1, 0.5);
     this.elder.group.rotation.y = -Math.PI / 2;
     this.scene.add(this.elder.group);
+    this.scene.add(this.ambient.points);
 
     // The advancing Silence: a pale wall of hush with the vault ship riding above it
     this.silence = new THREE.Mesh(
@@ -171,6 +174,7 @@ export class Act4 extends VoxelGame {
 
   protected override onFrame(dt: number) {
     if (input.actions.fartPressed) this.boost();
+    this.ambient.update(this.pos, dt);
     const t = performance.now() * 0.001;
     this.cooldown = Math.max(0, this.cooldown - dt);
     if (this.chainTimer > 0) {

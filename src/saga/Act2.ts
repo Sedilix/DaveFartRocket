@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { VoxelGame } from '../voxel/VoxelGame';
 import { fartAudio } from '../audio/FartSynth';
-import { damp, dampAngle } from '../core/animMath';
+import { dampAngle } from '../core/animMath';
 import { Quell } from './Quell';
 import { StoryUi } from './StoryUi';
 import { DRUM, GROUND, HORN, ISLAND, RAVINE_X0, RAVINE_X1, jungleGenerator } from './jungle';
 import { input } from '../input/UniversalInput';
+import { HushBubble } from '../vfx/HushBubble';
+import { AmbientParticles } from '../vfx/AmbientParticles';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -26,8 +28,8 @@ export class Act2 extends VoxelGame {
   private pim = new Quell({ height: 1.15, body: 0xb9a7e8, accent: 0xff9ccf });
   private toot = new Quell({ height: 2.7, body: 0xa5522d, accent: 0xff5b2e, antenna: false, headdress: 0xe0452b });
   private nomads: Quell[] = [];
-  private bubble: THREE.Mesh;
-  private bubbleFlash = 0;
+  private hushBubble = new HushBubble(1.7);
+  private ambient = new AmbientParticles('jungle', 260);
 
   private state: State = 'intro';
   private fartNum = 26;
@@ -65,11 +67,8 @@ export class Act2 extends VoxelGame {
     this.scene.add(this.toot.group);
     this.spawnNomads();
 
-    this.bubble = new THREE.Mesh(
-      new THREE.SphereGeometry(1.7, 20, 14),
-      new THREE.MeshBasicMaterial({ color: 0x7fd3ff, transparent: true, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide })
-    );
-    this.scene.add(this.bubble);
+    this.scene.add(this.hushBubble.mesh);
+    this.scene.add(this.ambient.points);
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyF' && !e.repeat) this.tryFart();
@@ -170,7 +169,7 @@ export class Act2 extends VoxelGame {
     this.fartNum++;
     this.fartsTotal++;
     this.dave.triggerFartVFX(Math.min(14, 6 + this.chain * 2));
-    this.bubbleFlash = 1;
+    this.hushBubble.triggerFlash(1.0);
     this.shake = 0.1 + this.chain * 0.08;
     fartAudio.playBeep(120 + this.chain * 30, 0.1, 0.02);
     this.ui.setChain(`FART #${this.fartNum}  ·  GUST x${power}`);
@@ -197,7 +196,7 @@ export class Act2 extends VoxelGame {
             this.fartNum++;
             this.fartsTotal++;
             this.dave.triggerFartVFX(14);
-            this.bubbleFlash = 1.6;
+            this.hushBubble.triggerFlash(1.6);
             this.shake = 0.7;
             this.nomads.forEach((n) => n.cheer(8));
             this.toot.cheer(8);
@@ -296,11 +295,9 @@ export class Act2 extends VoxelGame {
     this.pim.group.rotation.y = dampAngle(this.pim.group.rotation.y, yaw, 8, dt);
     this.pim.update(dt);
 
-    // Hush Field bubble
-    this.bubbleFlash = damp(this.bubbleFlash, 0, 5, dt);
-    this.bubble.position.set(this.pos.x, this.pos.y + 0.9, this.pos.z);
-    this.bubble.scale.setScalar(1 + Math.sin(t * 2) * 0.02 + this.bubbleFlash * 0.18);
-    (this.bubble.material as THREE.MeshBasicMaterial).opacity = 0.08 + this.bubbleFlash * 0.3;
+    // Hush Field and ambient fireflies
+    this.hushBubble.update(this.pos, dt, 100);
+    this.ambient.update(this.pos, dt);
 
     // The drum is the finale's destination; keep a tiny reference so it is never tree-shaken away
     void DRUM;

@@ -6,6 +6,7 @@ import { Quell } from './Quell';
 import { StoryUi } from './StoryUi';
 import { DESK, ICE_GROUND, OBS_FLOOR_Y, SHAFT, TELESCOPE, iceGenerator } from './ice';
 import { input } from '../input/UniversalInput';
+import { AmbientParticles } from '../vfx/AmbientParticles';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -22,6 +23,7 @@ export class Act3 extends VoxelGame {
   private ui: StoryUi;
   private pim = new Quell({ height: 1.15, body: 0xb9a7e8, accent: 0xff9ccf });
   private glorb = new Quell({ height: 1.95, body: 0x8fbf9f, accent: 0xffd166, hat: 0xf5f5f0, antenna: false });
+  private ambient = new AmbientParticles('ice', 320);
   private bubble: THREE.Mesh;
   private snow: THREE.Points;
   private bubbleFlash = 0;
@@ -75,6 +77,7 @@ export class Act3 extends VoxelGame {
     this.snow = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 3, sizeAttenuation: false }));
     this.snow.frustumCulled = false;
     this.scene.add(this.snow);
+    this.scene.add(this.ambient.points);
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyF' && !e.repeat) this.boost();
@@ -192,6 +195,7 @@ export class Act3 extends VoxelGame {
 
   protected override onFrame(dt: number) {
     if (input.actions.fartPressed) this.boost();
+    this.ambient.update(this.pos, dt);
     const t = performance.now() * 0.001;
     this.cooldown = Math.max(0, this.cooldown - dt);
     if (this.chainTimer > 0) {

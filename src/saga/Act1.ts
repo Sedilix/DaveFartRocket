@@ -6,6 +6,8 @@ import { fartAudio } from '../audio/FartSynth';
 import { damp } from '../core/animMath';
 import { Quell } from './Quell';
 import { StoryUi } from './StoryUi';
+import { HushBubble } from '../vfx/HushBubble';
+import { AmbientParticles } from '../vfx/AmbientParticles';
 
 // ---------------------------------------------------------------- the ship (a block-built interior)
 
@@ -77,8 +79,8 @@ export class Act1 extends VoxelGame {
   public ui: StoryUi;
   private pim = new Quell({ height: 1.15, body: 0xb9a7e8, accent: 0xff9ccf });
   private captain = new Quell({ height: 2.1, body: 0x6fc3bb, accent: 0xffe27a, hat: 0x23304f });
-  private bubble: THREE.Mesh;
-  private bubbleFlash = 0;
+  private hushBubble = new HushBubble(1.7);
+  private ambient = new AmbientParticles('ship', 220);
 
   public state: State = 'intro';
   public meter = 100;
@@ -112,12 +114,9 @@ export class Act1 extends VoxelGame {
     this.pim.group.rotation.y = -Math.PI / 2;
     this.scene.add(this.captain.group, this.pim.group);
 
-    // The Hush Field around Dave
-    this.bubble = new THREE.Mesh(
-      new THREE.SphereGeometry(1.7, 20, 14),
-      new THREE.MeshBasicMaterial({ color: 0x7fd3ff, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide })
-    );
-    this.scene.add(this.bubble);
+    // The Hush Field and ambient dust motes
+    this.scene.add(this.hushBubble.mesh);
+    this.scene.add(this.ambient.points);
 
     (window as unknown as { __act1?: Act1 }).__act1 = this;
 
@@ -189,7 +188,7 @@ export class Act1 extends VoxelGame {
     this.fartNum++;
     this.dave.triggerFartVFX(Math.min(14, this.fartNum - 12));
     this.shake = 0.22;
-    this.bubbleFlash = 1;
+    this.hushBubble.triggerFlash(1.0);
     this.casualties += 1 + Math.floor(Math.random() * 5);
     this.ui.updateMeter(this.meter, `Cushions Inconvenienced: ${this.casualties}`);
     // The field mutes it for everyone aboard, so the "sound" is a tiny, apologetic thing
@@ -259,8 +258,6 @@ export class Act1 extends VoxelGame {
   // ---------------------------------------------------------------- per-frame
 
   protected override onFrame(dt: number) {
-    const t = performance.now() * 0.001;
-
     if (this.state === 'play') {
       const humming = this.keys.has('KeyH');
       this.pim.setHumming(humming);
@@ -308,11 +305,8 @@ export class Act1 extends VoxelGame {
     this.pim.update(dt);
     this.captain.update(dt);
 
-    // The Hush field bubble: always faintly there, flares on every event
-    this.bubbleFlash = damp(this.bubbleFlash, 0, 5, dt);
-    this.bubble.position.set(this.pos.x, this.pos.y + 0.9, this.pos.z);
-    const s = 1 + Math.sin(t * 2) * 0.02 + this.bubbleFlash * 0.18;
-    this.bubble.scale.setScalar(s);
-    (this.bubble.material as THREE.MeshBasicMaterial).opacity = 0.1 + this.bubbleFlash * 0.35;
+    // Update Hush field and ambient particles
+    this.hushBubble.update(this.pos, dt, this.meter);
+    this.ambient.update(this.pos, dt);
   }
 }

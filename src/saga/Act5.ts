@@ -6,6 +6,7 @@ import { Quell } from './Quell';
 import { StoryUi } from './StoryUi';
 import { STAR_GROUND, TREE, starGenerator } from './star';
 import { input } from '../input/UniversalInput';
+import { AmbientParticles } from '../vfx/AmbientParticles';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -28,6 +29,7 @@ export class Act5 extends VoxelGame {
   private ui: StoryUi;
   private pim = new Quell({ height: 1.15, body: 0xb9a7e8, accent: 0xff9ccf });
   private cast: Quell[] = [];
+  private ambient = new AmbientParticles('star', 300);
   private bubble: THREE.Mesh;
   private bubbleFlash = 0;
   private ringEl: HTMLElement;
@@ -53,6 +55,7 @@ export class Act5 extends VoxelGame {
     this.pitch = 0.25;
     this.camDist = 6;
     this.addStars();
+    this.scene.add(this.ambient.points);
 
     this.pim.group.scale.setScalar(0.6);
     this.scene.add(this.pim.group);
@@ -215,6 +218,7 @@ export class Act5 extends VoxelGame {
 
   protected override onFrame(dt: number) {
     if (this.state === 'ritual' && (input.actions.fartPressed || input.actions.jumpPressed)) this.release();
+    this.ambient.update(this.pos, dt);
     const t = performance.now() * 0.001;
     if (this.state === 'walk' && Math.hypot(this.pos.x - (TREE.x - 8), this.pos.z - TREE.z) < 3) this.ritual();
 

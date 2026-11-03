@@ -34,6 +34,7 @@ export class VoxelGame {
   protected renderer: THREE.WebGLRenderer;
   protected scene = new THREE.Scene();
   protected camera: THREE.PerspectiveCamera;
+  protected dirLight!: THREE.DirectionalLight;
   protected world: VoxelWorld;
   protected dave = new Dave();
   protected pos = new THREE.Vector3();
@@ -69,6 +70,10 @@ export class VoxelGame {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
 
     const sky = opts.sky ?? SKY;
@@ -81,8 +86,25 @@ export class VoxelGame {
     const reach = this.world.radius * 16;
     if (opts.fog !== false) this.scene.fog = new THREE.Fog(sky, reach * 0.55, reach * 0.95);
 
-    this.scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-    this.scene.add(new THREE.DirectionalLight(0xfff2d6, 0.9));
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+    this.scene.add(new THREE.HemisphereLight(0xcfe3ff, 0x5a554a, 0.55));
+
+    this.dirLight = new THREE.DirectionalLight(0xfff7e6, 1.25);
+    this.dirLight.position.set(35, 70, 45);
+    this.dirLight.castShadow = true;
+    this.dirLight.shadow.mapSize.width = 1024;
+    this.dirLight.shadow.mapSize.height = 1024;
+    this.dirLight.shadow.bias = -0.0006;
+    this.dirLight.shadow.normalBias = 0.02;
+    this.dirLight.shadow.camera.near = 1;
+    this.dirLight.shadow.camera.far = 250;
+    const shadowExt = 45;
+    this.dirLight.shadow.camera.left = -shadowExt;
+    this.dirLight.shadow.camera.right = shadowExt;
+    this.dirLight.shadow.camera.top = shadowExt;
+    this.dirLight.shadow.camera.bottom = -shadowExt;
+    this.scene.add(this.dirLight);
+    this.scene.add(this.dirLight.target);
 
     this.scene.add(this.dave.group);
 
@@ -397,6 +419,10 @@ export class VoxelGame {
     this.yaw += input.actions.lookDelta.x;
     this.pitch = THREE.MathUtils.clamp(this.pitch + input.actions.lookDelta.y, -1.3, 1.45);
 
+    if (this.dirLight) {
+      this.dirLight.target.position.set(this.pos.x, this.pos.y, this.pos.z);
+      this.dirLight.position.set(this.pos.x + 35, this.pos.y + 70, this.pos.z + 45);
+    }
     this.world.update(this.pos.x, this.pos.z, 7);
     this.onFrame(dt);
     this.stepPlayer(dt);
