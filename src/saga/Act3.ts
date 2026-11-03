@@ -203,7 +203,7 @@ export class Act3 extends VoxelGame {
     if (this.state === 'climb') {
       const inShaft = this.pos.x > SHAFT.x0 - 1 && this.pos.x < SHAFT.x1 + 1 && Math.abs(this.pos.z) < 3;
       if (inShaft && this.pos.y > 29) this.bestLedge = Math.max(this.bestLedge, this.pos.y);
-      if (this.pos.y > OBS_FLOOR_Y + 0.9 && !inShaft) this.observatory();
+      if (this.pos.y > OBS_FLOOR_Y + 0.9 && (!inShaft || this.pos.y > OBS_FLOOR_Y + 1.9)) this.observatory();
       // Falling most of the way down counts as a (cheerful) tumble
       if (this.bestLedge > 40 && this.pos.y < 30 && inShaft) {
         this.falls++;
