@@ -4,6 +4,8 @@ import { Dave } from '../entities/Dave';
 import { physicsWorld } from '../core/Physics';
 import { B, BLOCKS, HOTBAR, isSolid } from './blocks';
 import { SEA, heightAt } from './terrain';
+import { input } from '../input/UniversalInput';
+import { settings } from '../ui/Settings';
 
 export interface VoxelOptions {
   seed?: number;
@@ -176,7 +178,14 @@ export class VoxelGame {
     window.addEventListener('blur', () => this.keys.clear());
 
     canvas.addEventListener('click', () => {
-      if (!this.locked) canvas.requestPointerLock?.();
+      if (!this.locked) {
+        try {
+          const p = canvas.requestPointerLock?.();
+          if (p && typeof (p as any).catch === 'function') {
+            (p as any).catch(() => {});
+          }
+        } catch {}
+      }
     });
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
@@ -257,9 +266,9 @@ export class VoxelGame {
   }
 
   private stepPlayer(dt: number) {
-    // Camera-relative input
-    const f = this.frozen ? 0 : (this.keys.has('KeyW') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0);
-    const r = this.frozen ? 0 : (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0);
+    // Camera-relative input from UniversalInput
+    const f = this.frozen ? 0 : -input.actions.move.y;
+    const r = this.frozen ? 0 : input.actions.move.x;
     const fx = -Math.sin(this.yaw);
     const fz = -Math.cos(this.yaw);
     let wx = fx * f + -fz * r;
@@ -301,11 +310,21 @@ export class VoxelGame {
       this.vy = JUMP_SPEED;
     }
 
+    if (this.onGround) {
+      input.coyoteTimer = settings.get().assistMode ? 0.22 : 0.14;
+    }
+    const wantJump = (input.actions.jumpPressed || input.jumpBufferTimer > 0) && !this.frozen;
+
     // Vertical
     if (inWater) {
-      this.vy = THREE.MathUtils.lerp(this.vy, this.keys.has('Space') && !this.frozen ? 4.2 : -2.2, 1 - Math.exp(-6 * dt));
+      this.vy = THREE.MathUtils.lerp(this.vy, wantJump || input.actions.jump ? 4.2 : -2.2, 1 - Math.exp(-6 * dt));
     } else {
-      if (this.keys.has('Space') && !this.frozen && this.onGround) this.vy = JUMP_SPEED;
+      if (wantJump && (this.onGround || input.coyoteTimer > 0)) {
+        this.vy = JUMP_SPEED;
+        this.onGround = false;
+        input.coyoteTimer = 0;
+        input.jumpBufferTimer = 0;
+      }
       this.vy = Math.max(-45, this.vy - GRAVITY * dt);
     }
     const ny = this.pos.y + this.vy * dt;
@@ -373,6 +392,10 @@ export class VoxelGame {
     const dt = Math.min((now - this.last) / 1000, 0.05);
     this.last = now;
     this.fps += (1 / Math.max(dt, 1e-4) - this.fps) * 0.05;
+
+    input.update(dt);
+    this.yaw += input.actions.lookDelta.x;
+    this.pitch = THREE.MathUtils.clamp(this.pitch + input.actions.lookDelta.y, -1.3, 1.45);
 
     this.world.update(this.pos.x, this.pos.z, 7);
     this.onFrame(dt);

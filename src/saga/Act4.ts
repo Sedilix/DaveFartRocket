@@ -5,6 +5,7 @@ import { damp, dampAngle } from '../core/animMath';
 import { Quell } from './Quell';
 import { StoryUi } from './StoryUi';
 import { DESERT_GROUND, FINISH_X, desertGenerator } from './desert';
+import { input } from '../input/UniversalInput';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -169,6 +170,7 @@ export class Act4 extends VoxelGame {
   }
 
   protected override onFrame(dt: number) {
+    if (input.actions.fartPressed) this.boost();
     const t = performance.now() * 0.001;
     this.cooldown = Math.max(0, this.cooldown - dt);
     if (this.chainTimer > 0) {

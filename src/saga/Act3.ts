@@ -5,6 +5,7 @@ import { damp, dampAngle } from '../core/animMath';
 import { Quell } from './Quell';
 import { StoryUi } from './StoryUi';
 import { DESK, ICE_GROUND, OBS_FLOOR_Y, SHAFT, TELESCOPE, iceGenerator } from './ice';
+import { input } from '../input/UniversalInput';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -190,6 +191,7 @@ export class Act3 extends VoxelGame {
   // ---------------------------------------------------------------- per-frame
 
   protected override onFrame(dt: number) {
+    if (input.actions.fartPressed) this.boost();
     const t = performance.now() * 0.001;
     this.cooldown = Math.max(0, this.cooldown - dt);
     if (this.chainTimer > 0) {

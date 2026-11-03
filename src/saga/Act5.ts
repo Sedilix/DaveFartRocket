@@ -5,6 +5,7 @@ import { damp, dampAngle } from '../core/animMath';
 import { Quell } from './Quell';
 import { StoryUi } from './StoryUi';
 import { STAR_GROUND, TREE, starGenerator } from './star';
+import { input } from '../input/UniversalInput';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -213,6 +214,7 @@ export class Act5 extends VoxelGame {
   }
 
   protected override onFrame(dt: number) {
+    if (this.state === 'ritual' && (input.actions.fartPressed || input.actions.jumpPressed)) this.release();
     const t = performance.now() * 0.001;
     if (this.state === 'walk' && Math.hypot(this.pos.x - (TREE.x - 8), this.pos.z - TREE.z) < 3) this.ritual();
 
