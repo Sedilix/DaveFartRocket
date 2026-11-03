@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PhysicsWorld } from '../core/Physics';
 import { fartAudio } from '../audio/FartSynth';
-import { damp } from '../core/animMath';
+import { damp, dampAngle } from '../core/animMath';
 import { CarType, HEAD_NORMAL, TAIL_BRAKE, TAIL_NORMAL, TrafficCar } from './TrafficCar';
 
 // Lanes sit at +-2.8 (plan: 3.5). Parked cars are pushed out to at least +-5.6 so even a truck
@@ -13,8 +13,6 @@ const LANES = [
 const CRUISE = 14;
 const BOUND = 80;
 const PARKED_X = 5.6;
-// Wrap-around point: the longest car (truck, 7.5 m) stays clear of the end caps at |z| = 81
-const WRAP = BOUND - 7.5 / 2 - 1;
 // Matches CameraController's grounded offset (0, 3.2, 7.2) from Dave; used to fade cars that sweep past it
 const CAM_OFFSET = new THREE.Vector3(0, 3.2, 7.2);
 const FADE_NEAR = 1;
@@ -32,8 +30,6 @@ const LANE_MARGIN = 0.85;
 const FALL_BRAKE_Y = 12;
 // Dave's capsule depth along the lane plus a margin, used to keep a car stopped until it has fully passed him
 const DAVE_CLEAR = 1;
-// Do not wrap a car onto the spawn point while Dave stands this close to it
-const SPAWN_CLEAR = 8;
 const COLORS = [0xbf3028, 0x2f68b4, 0xefefef, 0xa8adb2, 0x2f7a4a];
 
 type ColliderHandle = ReturnType<PhysicsWorld['createBoxCollider']>;
@@ -49,6 +45,7 @@ export class TrafficManager {
   private parked: TrafficCar[] = [];
   private startZ = new Map<TrafficCar, number>();
   private time = 0;
+  private transit = new Map<TrafficCar, { path: [number, number][]; i: number; entering: boolean }>();
   private honkTimer = 0;
   private alarmTimer = 0;
   private physics: PhysicsWorld | null = null;
@@ -153,12 +150,86 @@ export class TrafficManager {
   private leaderLimit(car: TrafficCar): number {
     let gap = Infinity;
     for (const o of this.moving) {
-      if (o === car || o.launched || o.dir !== car.dir || o.baseX !== car.baseX) continue;
+      if (o === car || o.launched || this.transit.has(o) || o.dir !== car.dir || o.baseX !== car.baseX) continue;
       const d = car.dir * (o.group.position.z - car.group.position.z);
       if (d <= 0) continue;
       gap = Math.min(gap, d - (car.length + o.length) / 2);
     }
     return CRUISE * THREE.MathUtils.clamp((gap - 2) / 8, 0, 1);
+  }
+
+  /**
+   * Cars leave the avenue by turning onto the cross street at the end, drive away out of sight, and come
+   * back the same way at the other end, so they are never deleted or spawned in view.
+   */
+  private makePath(d: number, x0: number): [number, number][] {
+    const s = Math.sign(x0) || 1;
+    return [
+      [x0, d * 79],
+      [x0, d * 83],
+      [x0 + s * 0.8, d * 86],
+      [x0 + s * 3, d * 88.2],
+      [x0 + s * 7, d * 89.2],
+      [x0 + s * 16, d * 89.2],
+      [s * 120, d * 89.2],
+      [s * 300, d * 89.2]
+    ];
+  }
+
+  private startExit(car: TrafficCar) {
+    this.transit.set(car, { path: this.makePath(car.dir, car.baseX), i: 1, entering: false });
+    this.dropCollider(car);
+  }
+
+  private stepTransit(car: TrafficCar, dt: number) {
+    const tr = this.transit.get(car)!;
+    const p = car.group.position;
+    const last = tr.path.length - 1;
+    // Slow for the corner, otherwise cruise; hold at the mouth of the avenue if the way in is occupied
+    const nearAvenue = tr.entering ? tr.i >= last - 4 : tr.i <= 4;
+    let target = nearAvenue ? 8 : CRUISE;
+    if (tr.entering && tr.i >= last - 1 && this.spawnBlocked(car, tr.path[last][1])) target = 0;
+    car.speed += Math.sign(target - car.speed) * Math.min(Math.abs(target - car.speed), 10 * dt);
+
+    let remaining = car.speed * dt;
+    while (remaining > 0 && tr.i <= last) {
+      const [tx, tz] = tr.path[tr.i];
+      const dx = tx - p.x;
+      const dz = tz - p.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist <= remaining) {
+        p.x = tx;
+        p.z = tz;
+        remaining -= dist;
+        tr.i++;
+      } else {
+        p.x += (dx / dist) * remaining;
+        p.z += (dz / dist) * remaining;
+        car.group.rotation.y = dampAngle(car.group.rotation.y, Math.atan2(dx, dz), 9, dt);
+        remaining = 0;
+      }
+    }
+    car.roll(dt);
+    car.group.position.y = car.baseY;
+    car.group.visible = Math.abs(p.x) < 120;
+
+    if (tr.i > last) {
+      if (!tr.entering) {
+        // Out of sight on the far cross street: continue at the other end of the avenue
+        const entry = this.makePath(-car.dir, car.baseX).reverse();
+        p.set(entry[0][0], car.baseY, entry[0][1]);
+        this.transit.set(car, { path: entry, i: 1, entering: true });
+        car.group.visible = false;
+      } else {
+        // Back on the avenue: hand over to the normal lane logic
+        this.transit.delete(car);
+        car.group.visible = true;
+        car.group.rotation.y = car.dir > 0 ? 0 : Math.PI;
+        p.x = car.baseX;
+        this.addCollider(car);
+        this.syncCollider(car);
+      }
+    }
   }
 
   /** True if an unlaunched car in the same lane occupies the spot where `car` would respawn. */
@@ -167,6 +238,7 @@ export class TrafficManager {
       (o) =>
         o !== car &&
         !o.launched &&
+        !this.transit.has(o) &&
         o.dir === car.dir &&
         o.baseX === car.baseX &&
         Math.abs(o.group.position.z - destZ) < (car.length + o.length) / 2 + 2
@@ -209,8 +281,15 @@ export class TrafficManager {
         return;
       }
       if (shockwave) {
+        this.transit.delete(car);
+        car.group.visible = true;
         car.launch(car.baseX < 0 ? -1 : 1);
         this.dropCollider(car);
+        return;
+      }
+      if (this.transit.has(car)) {
+        this.stepTransit(car, dt);
+        car.setLights(HEAD_NORMAL, TAIL_NORMAL);
         return;
       }
 
@@ -228,21 +307,10 @@ export class TrafficManager {
       car.group.position.x = damp(car.group.position.x, car.baseX + swerve, 10, dt);
 
       car.drive(dt);
-      // Wrap before the nose reaches the end-cap buildings at |z| = 81 (one shared value so every type loops equally)
-      const wrap = WRAP;
-      const z = car.group.position.z;
-      if (car.dir * z > wrap) {
-        const destZ = z - car.dir * wrap * 2;
-        if (
-          (this.daveInLane(car, dave) && Math.abs(dave.z - destZ) < car.length / 2 + SPAWN_CLEAR) ||
-          this.spawnBlocked(car, destZ)
-        ) {
-          // Dave or another car is where this car would reappear: hold it at the end of the street instead
-          car.group.position.z = car.dir * wrap;
-          car.speed = 0;
-        } else {
-          car.group.position.z = destZ;
-        }
+      // At the end of the avenue the car turns onto the cross street and drives away (see makePath)
+      if (car.dir * car.group.position.z > 79) {
+        this.startExit(car);
+        return;
       }
 
       if (alarms) {
@@ -284,6 +352,8 @@ export class TrafficManager {
     [...this.moving, ...this.parked].forEach((car) => {
       car.reset(car.baseX, this.startZ.get(car) ?? 0);
       car.speed = this.moving.includes(car) ? CRUISE : 0;
+      this.transit.delete(car);
+      car.group.visible = true;
       this.addCollider(car); // restore colliders dropped when the cars were launched
       this.syncCollider(car);
     });

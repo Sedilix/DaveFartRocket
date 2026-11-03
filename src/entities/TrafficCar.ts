@@ -215,6 +215,13 @@ export class TrafficCar {
     if (this.speed > 0.5) this.group.rotation.z = Math.sin(this.time * 1.7 + this.swayPhase) * 0.01;
   }
 
+  /** Spin the wheels for a car that is being steered along a path (not driven by drive()). */
+  public roll(dt: number) {
+    this.time += dt;
+    const spin = (this.speed * dt) / WHEEL_RADIUS;
+    this.wheels.forEach((w) => (w.rotation.x += spin));
+  }
+
   public setLights(head: number, tail: number) {
     this.headMats.forEach((m) => m.color.setHex(head));
     this.tailMats.forEach((m) => m.color.setHex(tail));
