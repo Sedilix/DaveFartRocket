@@ -37,6 +37,12 @@ async function init() {
     return;
   }
 
+  if (new URLSearchParams(window.location.search).get('mode') === 'act5') {
+    const { Act5 } = await import('./saga/Act5');
+    new Act5(container).start();
+    return;
+  }
+
   const game = new GameLoop(container);
   await game.start();
 }

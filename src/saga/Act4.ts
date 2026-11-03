@@ -160,6 +160,8 @@ export class Act4 extends VoxelGame {
           act: 'ACT IV',
           title: 'The Quiet Before',
           blurb: 'Next: Act V, The Bean Tree at the End of the Universe. Where the only thing left to do is wait.',
+          nextHref: '?mode=act5',
+          nextLabel: 'CONTINUE TO ACT V',
           stats: `Fart-boosts: <b>${this.fartsTotal}</b> &nbsp;·&nbsp; Times caught by the Silence: <b>${this.caught}</b> &nbsp;·&nbsp; Dunes moved: <b>1</b>`
         });
       }
