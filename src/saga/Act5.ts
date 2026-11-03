@@ -8,6 +8,8 @@ import { STAR_GROUND, TREE, starGenerator } from './star';
 import { input } from '../input/UniversalInput';
 import { AmbientParticles } from '../vfx/AmbientParticles';
 import { audio } from '../audio/AudioEngine';
+import { S5_SCRIPT } from './script';
+import { progression } from '../core/progression';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -105,36 +107,18 @@ export class Act5 extends VoxelGame {
   }
 
   private runIntro() {
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'The Source was a dead star, cooled to a quiet crust, at the very end of everything.' },
-        { who: 'Pim', text: 'There is the tree. It is very large. It looks like it has been waiting.', whisper: true },
-        { who: 'Dave', text: 'So I just... eat the bean?' },
-        { who: 'Pim', text: 'No. The cure is not a thing you eat. Glorb said so. I believe it is something you... do. Quietly.', whisper: true }
-      ],
-      () => {
-        this.state = 'walk';
-        this.frozen = false;
-        this.ui.setObjective('Follow the glowing path to the Bean Tree.');
-      }
-    );
+    this.ui.say(S5_SCRIPT.intro, () => {
+      this.state = 'walk';
+      this.frozen = false;
+      this.ui.setObjective('Follow the glowing path to the Bean Tree.');
+    });
   }
 
   private ritual() {
     this.state = 'ritual';
     this.frozen = true;
     this.ui.setObjective(null);
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'Beneath the tree, Dave felt it. The familiar, enormous, doubling urge. Fart number sixty-one.' },
-        { who: 'Pim', text: 'Dave. Listen. Every fart you have ever done, you pushed. This one you must not.', whisper: true },
-        { who: 'Pim', text: 'Hold it. Breathe. When the ring turns green, let it go... gently.', whisper: true },
-        { who: 'Dave', text: 'So the whole saga comes down to not doing the thing.' },
-        { who: 'Narrator', text: 'It had always, secretly, come down to that.' },
-        { who: 'Pim', text: 'Press F or click only when the ring is green. Too early, and... well. You know.', whisper: true }
-      ],
-      () => this.beginHold()
-    );
+    this.ui.say(S5_SCRIPT.ritual, () => this.beginHold());
   }
 
   private beginHold() {
@@ -169,32 +153,31 @@ export class Act5 extends VoxelGame {
     this.ui.popup('...', 2500);
     this.dave.triggerFartVFX(3);
     this.spawnFleet();
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'Silence. Real silence. Not the Hush Field kind. The kind you get when something finally stops.' },
-        { who: 'Narrator', text: 'On the Bean Tree, a single bean turned pale, and then white, and then quietly fell off.' },
-        { who: 'Pim', text: 'Dave. The doubling... it has reset. You are back to times one.', whisper: true },
-        { who: 'Dave', text: 'Wait, really? Let me check.', action: () => fartAudio.playBeep(260, 0.07, 0.02) },
-        { who: 'Narrator', text: 'It was a small, normal, almost polite noise. It was, scientifically, a fart.' },
-        { who: 'Everyone', text: 'A STANDING OVATION!', action: () => this.cast.forEach((q) => q.cheer(30)) },
-        { who: 'Captain Murmur', text: 'I... did not faint. I would like that noted.', whisper: true },
-        { who: 'Elder Sibilance', text: 'Well. That was... lovely.', whisper: true },
-        { who: 'Dave', text: 'Can you help me rebuild Earth? I owe it an apology.' },
-        { who: 'Pim', text: 'Of course. We will do it quietly. Block by block.', whisper: true },
-        { who: 'Narrator', text: 'Dave is fine. Dave would like the toast.' }
-      ],
-      () => {
-        this.state = 'end';
-        this.ui.showEnd({
-          act: 'ACT V',
-          title: 'Dave Is Fine (For Real This Time)',
-          blurb: 'The doubling is over. The Quell fleet is applauding. Earth is waiting to be rebuilt, one block at a time.',
-          nextHref: '?mode=voxel',
-          nextLabel: 'REBUILD EARTH (SANDBOX)',
-          stats: `Attempts at the silent fart: <b>${this.attempts + 1}</b> &nbsp;·&nbsp; Planets inconvenienced: <b>all of them</b> &nbsp;·&nbsp; Pigeons: <b>fine</b>`
-        });
+    const lines = S5_SCRIPT.win.map((l, i) => {
+      if (i === 3) return { ...l, action: () => fartAudio.playBeep(260, 0.07, 0.02) };
+      if (i === 5) return { ...l, action: () => this.cast.forEach((q) => q.cheer(30)) };
+      return l;
+    });
+    this.ui.say(lines, () => {
+      this.state = 'end';
+
+      // Persist completion, achievements, and unlock Sandbox
+      progression.completeAct(5, { attempts: this.attempts + 1 });
+      if (this.attempts === 0) {
+        progression.unlockAchievement('perfectly_silent');
       }
-    );
+      progression.unlockAchievement('brunch');
+      progression.unlockAct(5);
+
+      this.ui.showEnd({
+        act: 'ACT V',
+        title: 'Dave Is Fine (For Real This Time)',
+        blurb: 'The doubling is over. The Quell fleet is applauding. Earth is waiting to be rebuilt, one block at a time.',
+        nextHref: '?mode=voxel',
+        nextLabel: 'REBUILD EARTH (SANDBOX)',
+        stats: `Attempts at the silent fart: <b>${this.attempts + 1}</b> &nbsp;·&nbsp; Planets inconvenienced: <b>all of them</b> &nbsp;·&nbsp; Pigeons: <b>fine</b>`
+      });
+    });
   }
 
   private spawnFleet() {

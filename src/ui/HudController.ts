@@ -58,6 +58,7 @@ export class HudController {
   private playAgainBtn!: HTMLElement;
 
   private onPlayAgainCallback: (() => void) | null = null;
+  private onContinueSagaCallback: (() => void) | null = null;
   private lastTriggerTimestamp = 0;
 
   // Cached values so unchanged state never touches the DOM
@@ -151,6 +152,10 @@ export class HudController {
     this.onPlayAgainCallback = cb;
   }
 
+  public setOnContinueSaga(cb: () => void) {
+    this.onContinueSagaCallback = cb;
+  }
+
   private cacheElements() {
     this.fartNumElem = this.container.querySelector('#hud-fart-num')!;
     this.multiplierElem = this.container.querySelector('#hud-multiplier')!;
@@ -215,6 +220,14 @@ export class HudController {
       this.restarting = true;
       if (this.onPlayAgainCallback) {
         this.onPlayAgainCallback();
+      }
+    });
+
+    const sagaBtn = this.container.querySelector('#saga-btn');
+    sagaBtn?.addEventListener('click', (e) => {
+      if (this.onContinueSagaCallback) {
+        e.preventDefault();
+        this.onContinueSagaCallback();
       }
     });
   }

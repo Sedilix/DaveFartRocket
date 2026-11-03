@@ -12,6 +12,7 @@ import { useGameStore } from './gameState';
 import { getMilestone } from '../data/milestones';
 import { InputManager } from '../ui/InputManager';
 import { HudController } from '../ui/HudController';
+import { progression } from './progression';
 
 /** Sun direction relative to Dave (the light and its shadow frustum follow him). */
 const LIGHT_OFFSET = new THREE.Vector3(30, 60, 40);
@@ -80,7 +81,10 @@ export class GameLoop {
   private targetDaveAltitude = 0;
   /** Latched once Dave has climbed past the street for good (cleared on restart). */
   private streetGone = false;
-  private ending: { phase: 'moon' | 'earth' | 'blast'; t: number; daveT: number; blasted: boolean } | null = null;
+  private ending: { phase: 'moon' | 'earth' | 'blast' | 'bridge'; t: number; daveT: number; blasted: boolean } | null = null;
+  private whisperGroup?: THREE.Group;
+  private whisperBubble?: THREE.Mesh;
+  private bridgeOverlay?: HTMLElement;
   private tmpA = new THREE.Vector3();
   private tmpB = new THREE.Vector3();
   private tmpC = new THREE.Vector3();
@@ -167,6 +171,10 @@ export class GameLoop {
 
     this.hudController.setOnPlayAgain(() => {
       this.restartGame();
+    });
+
+    this.hudController.setOnContinueSaga(() => {
+      this.startSagaBridge();
     });
 
     window.addEventListener('resize', this.onResize);
@@ -386,7 +394,7 @@ export class GameLoop {
           e.phase = 'blast';
           e.t = 0;
         }
-      } else {
+      } else if (e.phase === 'blast') {
         look.copy(ep);
         cam.z += 150 * Math.min(e.t, ENDING_MAX_T); // pull back to keep the debris in frame
         if (!e.blasted) {
@@ -399,7 +407,44 @@ export class GameLoop {
           this.whiteoutTimer = WHITEOUT_DURATION;
           endGameMusic.start(3.0);
         }
-        if (e.t >= 4.2 && !useGameStore.getState().endingReady) useGameStore.getState().setEndingReady(true);
+        if (e.t >= 4.2 && !useGameStore.getState().endingReady) {
+          useGameStore.getState().setEndingReady(true);
+          progression.completeAct(0, { farts: 25, casualties: 1 });
+          progression.unlockAct(1);
+          progression.unlockAchievement('dave_is_fine');
+        }
+      } else if (e.phase === 'bridge') {
+        cam.set(dave.x + 14, dave.y + 6, dave.z + 28);
+        look.copy(dave);
+
+        if (this.whisperGroup) {
+          const progress = Math.min(1, e.t / 3.0);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          const startX = dave.x + 90;
+          const startY = dave.y + 40;
+          const startZ = dave.z - 140;
+
+          const targetX = dave.x + 16;
+          const targetY = dave.y + 6;
+          const targetZ = dave.z - 12;
+
+          this.whisperGroup.position.set(
+            THREE.MathUtils.lerp(startX, targetX, ease),
+            THREE.MathUtils.lerp(startY, targetY, ease),
+            THREE.MathUtils.lerp(startZ, targetZ, ease)
+          );
+          this.whisperGroup.lookAt(dave.x - 20, dave.y, dave.z + 30);
+        }
+
+        if (this.whisperBubble) {
+          this.whisperBubble.position.copy(dave);
+          const bubbleScale = Math.min(1.2, 0.2 + e.t * 0.4);
+          this.whisperBubble.scale.setScalar(bubbleScale);
+        }
+
+        if (e.t >= 3.6) {
+          window.location.href = '?mode=act1';
+        }
       }
     }
     this.cameraController.setCinematic(cam, look);
@@ -451,6 +496,93 @@ export class GameLoop {
 
     // Reset pedestrians, dog and traffic
     this.city.reset();
+
+    if (this.bridgeOverlay) {
+      this.bridgeOverlay.remove();
+      this.bridgeOverlay = undefined;
+    }
+    if (this.whisperGroup) {
+      this.scene.remove(this.whisperGroup);
+      this.whisperGroup = undefined;
+    }
+    if (this.whisperBubble) {
+      this.scene.remove(this.whisperBubble);
+      this.whisperBubble = undefined;
+    }
+  }
+
+  public startSagaBridge() {
+    if (!this.ending) return;
+    this.ending.phase = 'bridge';
+    this.ending.t = 0;
+
+    // Build the Whisper starship if not already built
+    if (!this.whisperGroup) {
+      this.whisperGroup = new THREE.Group();
+      // Sleek geometric hull
+      const hullMat = new THREE.MeshStandardMaterial({ color: 0xdde5ed, roughness: 0.35, metalness: 0.2 });
+      const hullGeom = new THREE.ConeGeometry(5, 26, 12);
+      hullGeom.rotateX(Math.PI / 2);
+      const hull = new THREE.Mesh(hullGeom, hullMat);
+      this.whisperGroup.add(hull);
+
+      // Glowing bridge window / bioluminescent trim
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0x7fd3ff });
+      const bridgeGeom = new THREE.BoxGeometry(2.4, 0.8, 4.5);
+      const bridgeMesh = new THREE.Mesh(bridgeGeom, glowMat);
+      bridgeMesh.position.set(0, 1.4, -2);
+      this.whisperGroup.add(bridgeMesh);
+
+      // Wings / outriggers
+      const wingGeom = new THREE.BoxGeometry(16, 0.4, 6);
+      const wings = new THREE.Mesh(wingGeom, hullMat);
+      wings.position.set(0, 0, 4);
+      this.whisperGroup.add(wings);
+
+      // Engine glow
+      const engineGeom = new THREE.CylinderGeometry(1.2, 1.6, 1.5, 12);
+      engineGeom.rotateX(Math.PI / 2);
+      const engine = new THREE.Mesh(engineGeom, glowMat);
+      engine.position.set(0, 0, 13);
+      this.whisperGroup.add(engine);
+
+      this.scene.add(this.whisperGroup);
+
+      // Glowing Hush bubble around Dave
+      const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x7fd3ff, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false });
+      this.whisperBubble = new THREE.Mesh(new THREE.SphereGeometry(3.5, 24, 16), bubbleMat);
+      this.scene.add(this.whisperBubble);
+    }
+
+    // Create subtle story dialogue card overlay
+    if (!this.bridgeOverlay) {
+      this.bridgeOverlay = document.createElement('div');
+      this.bridgeOverlay.className = 'story-dialogue-card';
+      this.bridgeOverlay.style.cssText = `
+        position: fixed;
+        bottom: 48px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 50;
+        max-width: 620px;
+        width: calc(100% - 40px);
+        padding: 16px 22px;
+        font-family: var(--font-story);
+        font-size: var(--fs-body);
+        line-height: var(--lh-body);
+        color: #fff;
+        animation: hud-fade-in 0.4s ease-out;
+      `;
+      this.bridgeOverlay.innerHTML = `
+        <div style="font-size:var(--fs-caption);font-weight:var(--fw-heavy);color:#7fe0d4;margin-bottom:4px;letter-spacing:var(--tracking-wide)">CAPTAIN MURMUR (THE WHISPER)</div>
+        <div style="font-style:italic">"A human adrift... prepare the welcome tea. And please... no sudden vibrations."</div>
+      `;
+      document.body.appendChild(this.bridgeOverlay);
+    }
+
+    // Hide the climax overlay
+    const climax = document.getElementById('climax-overlay');
+    if (climax) climax.style.display = 'none';
   }
 
   /** Spirals outwards from (x, z) to the first spot where Dave's capsule overlaps no collider. */

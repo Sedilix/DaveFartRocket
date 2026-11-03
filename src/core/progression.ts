@@ -9,6 +9,7 @@ export interface ActStats {
   casualties?: number;
   timeMs?: number;
   bestChain?: number;
+  attempts?: number;
 }
 
 export interface Achievement {
@@ -198,16 +199,18 @@ class ProgressionManager {
   }
 
   public showAchievementToast(id: string) {
+    if (typeof document === 'undefined') return;
     const meta = ACHIEVEMENTS[id];
     if (!meta) return;
     const toast = document.createElement('div');
     toast.className = 'hud-toast';
     toast.innerHTML = `<span style="font-size:18px;margin-right:6px">${meta.icon}</span> <span><b>ACHIEVEMENT:</b> ${meta.title}</span>`;
     document.body.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('visible'));
+    const rAf = typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : (fn: () => void) => setTimeout(fn, 16);
+    rAf(() => toast.classList.add('visible'));
     window.setTimeout(() => {
       toast.classList.remove('visible');
-      window.setTimeout(() => toast.remove(), 400);
+      window.setTimeout(() => toast.remove?.(), 400);
     }, 3500);
   }
 

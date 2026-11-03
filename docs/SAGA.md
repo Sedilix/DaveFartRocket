@@ -90,14 +90,111 @@ Dave asks the Quell to help him rebuild Earth. They agree, in a whisper. The **v
 | 45 | ×17 trillion | a star |
 | 50 | ×563 trillion | a cluster, "pending review" |
 
-## How it plugs into the game
+## Formal Beat Sheet
 
-- **Street/rocket game** stays as the Prologue.
-- **Voxel mode** hosts Acts II to V as procedurally generated planets with biome presets, and the Epilogue as a sandbox where you rebuild Earth.
-- **Reusable systems:** NPC reactions (the Nomads and the Quell react with the same tier system), the narrator subtitle line, the tension ring (inverted in the finale), onomatopoeia popups, and the leashed-dog gag.
+### Prologue: STREET (Act 0: The Pavement Launch)
+- **Beat 0.1 (00:00 - 00:30):** Ordinary Tuesday on 4th & Elm. Dave stands outside the cafe. Farts #1 to #8 are minor inconveniences: pigeons scatter, dog looks judgmental, pedestrian eyebrows twitch.
+- **Beat 0.2 (00:30 - 01:15):** The Lift-off (#9 to #15). Dave takes flight. The altimeter reveals itself. Cars veer off at the intersection. Sidewalk tables flip over.
+- **Beat 0.3 (01:15 - 02:00):** The Stratosphere (#16 to #24). Clouds give way to deep navy abyss, then orbital blackness. Satellites wobble. Houston goes on mute.
+- **Beat 0.4 (02:00 - 02:40):** The World Breaker (#25). 16.7 million times power. 198 dB. The whiteout flash. Earth shatters into silent celestial debris. Dave drifts peacefully in orbit. "Dave is fine."
+- **Beat 0.5 (Bridge):** The *Whisper* decloaks from deep space. Captain Murmur prepares welcome tea and faints. A Hush Field wraps around Dave.
 
-## Open questions
+### Act I: S1 SHIP (A Very Quiet Briefing)
+- **Beat 1.1:** Dave wakes aboard the *Whisper*. Airlock formal greeting fails instantly when Dave offers condolences with his whole chest. Captain Murmur faints.
+- **Beat 1.2:** Pim is assigned via reluctant lottery. Dave walks the corridor lined with ancient porcelain relics. The player learns to hold H for Pim's calming hum.
+- **Beat 1.3:** The Heirloom Vase of Quiet shatters on failure, resetting to the airlock with dry Quell resignation.
+- **Beat 1.4:** Briefing room console. Pim reveals the ancient Doubling Bean origin and points Dave to the Moon of Nom.
 
-1. Is the Elder's vault a real threat, or does she turn out to be the one who helps in the end?
-2. Does Pim get a name-drop on a ship or a medal at the end?
-3. Should there be a post-credits stinger with the chef?
+### Act II: S2 NOM (A Gust of Wind)
+- **Beat 2.1:** Arrival in the vibrant jungle canopy. Nomads revere Dave as the divine Gust Prophet.
+- **Beat 2.2:** The sacred ravine crossing. Dave chains fart-boosts (x1, x2, x4, x8) across floating islands.
+- **Beat 2.3:** The festival plaza. Dave approaches the Great Gust Horn and blows the canopy open.
+- **Beat 2.4:** Big Toot reveals the chef who planted the bean fled to Frostbite Hotel.
+
+### Act III: S3 FROSTBITE (Mind the Ledges)
+- **Beat 3.1:** Sub-zero ice moon. Pim wears a homemade scarf. Dave discovers the frozen Grand Frostbite Hotel.
+- **Beat 3.2:** Chef Glorb's confession. The limited-time brunch bean was never meant to be cosmic. Glorb sneezes; an avalanche hits the greenhouse.
+- **Beat 3.3:** The out-of-order lift shaft. Dave chains vertical fart-jumps ledge by ledge.
+- **Beat 3.4:** The rooftop observatory. Glorb points out the dead star source through the telescope, while the stairs sit untouched next to him. Elder Sibilance's vault ship shadows the sky.
+
+### Act IV: S4 DESERT (The Quiet Before)
+- **Beat 4.1:** The Desert of Silence. Elder Sibilance proposes a ten-thousand-year peaceful vault containment.
+- **Beat 4.2:** Pim yells "NO!" and orders Dave to run.
+- **Beat 4.3:** The Silence chase. The expanding white wall of acoustic nullification pursues across the dunes. Dave boosts through checkpoints.
+- **Beat 4.4:** Reaching the oasis arch. Pim delivers a heartfelt defense of noise and life to a moved sand dune. The Elder relents.
+
+### Act V: S5 SOURCE (The Bean Tree at the End of the Universe)
+- **Beat 5.1:** The dead star core. Dave and Pim walk the glowing path to the progenitor Bean Tree.
+- **Beat 5.2:** Fart #61 arrives. The inverted tension ring begins filling. Dave must hold it through the urge and release strictly in the green window.
+- **Beat 5.3:** The silent puff. The tension dissolves into harmonic equilibrium. The Doubling Bean turns white and drops.
+- **Beat 5.4:** The Quell armada erupts into a standing ovation. Captain Murmur stays conscious.
+
+### Epilogue: VOXEL (Rebuild Earth)
+- **Beat 6.1:** Dave and the Quell return to an open voxel sandbox.
+- **Beat 6.2:** Dave follows the blueprints: Pavement & Curbs, Gary's Deli, Pigeon Loft, and Community Garden.
+- **Beat 6.3:** Brunch is finally served. Dave is fine.
+
+---
+
+## Character Bible
+
+### Dave
+- **Visuals:** Orange t-shirt, blue denim trousers, brown sneakers, completely unruffled posture.
+- **Voice/Blips:** Warm, cheerful, mid-register square synth blips (240-280 Hz).
+- **Core Motivation:** Find a cure, apologize for any broken crockery, get brunch.
+- **Signature Trait:** Completely impervious to cosmic dread; assumes everyone is having a normal day.
+
+### Pim
+- **Visuals:** Small lavender Quell (1.15m), dual expressive antennae, reactive pink accent, knitted winter scarf in Act III.
+- **Voice/Blips:** Delicate, high-pitched sine blips with subtle breath modulation (460-520 Hz).
+- **Core Motivation:** Keep the Hush Field intact, survive assigned duty, protect Dave from himself.
+- **Signature Trait:** Expresses intense terror exclusively via polite whispering and deadpan bureaucratic precision.
+
+### Captain Hushworth Murmur
+- **Visuals:** Tall seafoam Quell (2.1m), navy bicorne hat, formal gold chest trim.
+- **Voice/Blips:** Polite, warbling flute tones (360-400 Hz) that decelerate as he swoons.
+- **Core Motivation:** Maintain naval acoustic discipline; avoid fainting in front of the crew.
+- **Signature Trait:** Faints backward into cushions the moment any sound exceeds 45 dB.
+
+### Elder Sibilance
+- **Visuals:** Statuesque alabaster Quell (2.7m), pale silk headdress, floating silver mantle.
+- **Voice/Blips:** Deep, resonant crystalline chime (190-230 Hz).
+- **Core Motivation:** Universal equilibrium, entropy prevention, cosmic silence.
+- **Signature Trait:** Terrifyingly reasonable; presents eternal cryogenic imprisonment like a complimentary spa voucher.
+
+### Chef Glorb
+- **Visuals:** Plump sage-green Quell (1.95m), tall white chef toque, butter-yellow apron.
+- **Voice/Blips:** Rapid, jittery staccato clicks (310-350 Hz).
+- **Core Motivation:** Culinary perfection, escaping liability lawsuits.
+- **Signature Trait:** Immediately explains disastrous galactic catastrophes as "limited-time tasting specials."
+
+### Big Toot
+- **Visuals:** Burly terracotta Nomad (2.7m), vibrant red and gold feather headdress.
+- **Voice/Blips:** Booming low brass/formant sweeps (140-180 Hz).
+- **Core Motivation:** Honor the Great Gust, encourage maximum atmospheric release.
+- **Signature Trait:** Treats property damage caused by propulsion as sacred miracles.
+
+### The Narrator
+- **Visuals:** Centered Georgia serif italic caption, cool slate blue typography.
+- **Voice:** Unspoken text with impeccably paced punctuation pauses.
+- **Core Motivation:** Report catastrophic biological events with BBC World Service serenity.
+- **Signature Trait:** The bigger the explosion, the shorter the clause.
+
+---
+
+## The Joke Ledger
+
+| Joke / Gag | Origin Scene | Recurring Appearances | Implementation Status |
+| --- | --- | --- | --- |
+| **"Dave is fine."** | Street finale | Every act end screen; HUD subtitle | Fully implemented across all 6 acts |
+| **The Casualty Counter** | Street HUD | Acts 1-5, Main Menu Act Select header | Persisted in `progression.ts`, displayed in Main Menu |
+| **Quell Euphemisms** | S1 Ship | S2, S3, S4, S5 dialogues | Integrated in `src/saga/script/index.ts` |
+| **The Fainting Captain** | S1 Intro | S1 Airlock, S5 Finale | Character rig supports `faint()` and recovery |
+| **The Heirloom Vase** | S1 Corridor | S1 Fail screen, S4 Apology | Interactive block in S1 corridor, referenced in S4 |
+| **The Stairs Nobody Took** | S3 Hotel | S3 Observatory, Achievement | Implemented in `Act3.ts`, unlocks `found_the_stairs` |
+| **Gary's Deli Brunch** | S1 Briefing | S3 Confession, S5 Win, Epilogue Blueprint | Linked throughout script and Voxel blueprint |
+| **The Pigeons** | Street pavement | Street launch, S5 Ending, Epilogue | Procedural birds across street, achievement `pigeon_whisperer` |
+| **The Leashed Dog** | Street sidewalk | Street sidewalk patrol | Procedural dog + owner with gaze and reactions |
+| **The Reasonable Answer** | S4 Dunes | S4 Intro, Achievement | Stand still in S4 chase, unlocks `reasonable_answer` |
+| **The Butt-shaped Button** | Street HUD | Main street interface, mobile touch UI | Custom SVG dual-cheek button with animated gas puffs |
+

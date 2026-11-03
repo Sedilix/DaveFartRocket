@@ -6,6 +6,7 @@ import { B, BLOCKS, HOTBAR, isSolid } from './blocks';
 import { SEA, heightAt } from './terrain';
 import { input } from '../input/UniversalInput';
 import { settings } from '../ui/Settings';
+import { progression } from '../core/progression';
 
 export interface VoxelOptions {
   seed?: number;
@@ -52,6 +53,13 @@ export class VoxelGame {
   private hitCache = { hit: null as ReturnType<VoxelWorld['raycast']> };
   protected hotbarEl!: HTMLElement;
   protected infoEl!: HTMLElement;
+  private blueprintContainer?: HTMLElement;
+  private epilogueGoals = {
+    pavement: { count: 0, target: 8, label: 'Pavement & Curbs (Stone)' },
+    deli: { count: 0, target: 12, label: 'Gary’s Deli (Planks / Brick)' },
+    coop: { count: 0, target: 4, label: 'Pigeon Loft (Wood)' },
+    garden: { count: 0, target: 4, label: 'Community Garden (Leaves/Grass)' }
+  };
   private moveInput = { x: 0, y: 0 };
   protected last = performance.now();
   private fps = 60;
@@ -148,21 +156,44 @@ export class VoxelGame {
 
   private buildHud() {
     const root = document.createElement('div');
-    root.style.cssText = 'position:fixed;inset:0;pointer-events:none;font-family:system-ui,sans-serif;color:#fff;z-index:10';
+    root.style.cssText = 'position:fixed;inset:0;pointer-events:none;font-family:var(--font-ui);color:#fff;z-index:10';
     root.innerHTML = `
       <div style="position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%)">
         <div style="position:absolute;left:8px;top:0;width:2px;height:18px;background:#fff;opacity:.85;mix-blend-mode:difference"></div>
         <div style="position:absolute;top:8px;left:0;height:2px;width:18px;background:#fff;opacity:.85;mix-blend-mode:difference"></div>
       </div>
-      <div id="vx-info" style="position:absolute;left:12px;top:10px;font-size:12px;line-height:1.5;text-shadow:0 1px 3px #000;opacity:.9"></div>
-      <div id="vx-help" style="position:absolute;left:50%;top:18%;transform:translateX(-50%);padding:10px 16px;border-radius:12px;background:rgba(20,26,38,.78);font-size:14px;text-align:center;line-height:1.6">
-        Click to capture the mouse<br><span style="opacity:.75">WASD move · Space jump / swim · Mouse look · Left click break · Right click place · 1-9 or wheel to pick a block</span>
+      <div id="vx-info" class="hud-glass-card" style="position:absolute;left:14px;top:14px;padding:8px 12px;font-size:var(--fs-caption);line-height:1.4"></div>
+      <div id="vx-blueprint" class="hud-glass-card" style="position:absolute;right:16px;top:16px;padding:14px 18px;min-width:240px;pointer-events:auto;user-select:none"></div>
+      <div id="vx-help" class="hud-glass-card" style="position:absolute;left:50%;top:14%;transform:translateX(-50%);padding:10px 18px;font-size:var(--fs-caption);text-align:center;line-height:1.6">
+        Click canvas to capture pointer<br><span style="opacity:.75">WASD move · Space jump · Look · Left click break · Right click place · 1-9 pick block</span>
       </div>
-      <div id="vx-hotbar" style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:6px"></div>`;
+      <div id="vx-hotbar" style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px"></div>`;
     document.body.appendChild(root);
     this.infoEl = root.querySelector('#vx-info') as HTMLElement;
     this.hotbarEl = root.querySelector('#vx-hotbar') as HTMLElement;
+    this.blueprintContainer = root.querySelector('#vx-blueprint') as HTMLElement;
     this.renderHotbar();
+    this.updateBlueprintHud();
+  }
+
+  private updateBlueprintHud() {
+    if (!this.blueprintContainer) return;
+    const items = Object.values(this.epilogueGoals)
+      .map((g) => {
+        const done = g.count >= g.target;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:center;color:${done ? 'var(--col-accent-emerald)' : '#fff'}">
+            <span>${done ? '✓' : '○'} ${g.label}</span>
+            <span style="font-weight:var(--fw-bold);font-variant-numeric:tabular-nums">${g.count}/${g.target}</span>
+          </div>
+        `;
+      })
+      .join('');
+    this.blueprintContainer.innerHTML = `
+      <div style="font-size:var(--fs-caption);font-weight:var(--fw-heavy);color:var(--col-accent-cyan);letter-spacing:var(--tracking-widest);margin-bottom:6px">EPILOGUE: REBUILD EARTH</div>
+      <div style="font-size:var(--fs-caption);opacity:0.8;margin-bottom:8px">Place blocks to establish the new settlement:</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:var(--fs-caption)">${items}</div>
+    `;
   }
 
   private buildStoryHud() {
@@ -176,9 +207,10 @@ export class VoxelGame {
       const slot = document.createElement('div');
       const hex = '#' + BLOCKS[id].top.toString(16).padStart(6, '0');
       const sel = i === this.selected;
-      slot.style.cssText = `width:46px;height:46px;border-radius:8px;background:${hex};border:3px solid ${sel ? '#fff' : 'rgba(0,0,0,.45)'};box-shadow:0 2px 6px rgba(0,0,0,.4);position:relative;transform:scale(${sel ? 1.12 : 1})`;
-      slot.innerHTML = `<span style="position:absolute;left:3px;top:1px;font-size:11px;text-shadow:0 1px 2px #000">${i + 1}</span>
-        <span style="position:absolute;left:0;right:0;bottom:1px;text-align:center;font-size:9px;text-shadow:0 1px 2px #000">${BLOCKS[id].name}</span>`;
+      slot.className = 'hud-glass-card';
+      slot.style.cssText = `width:46px;height:46px;border-radius:10px;background:${hex};border:2px solid ${sel ? '#fff' : 'rgba(255,255,255,.2)'};box-shadow:0 4px 12px rgba(0,0,0,.5);position:relative;transform:scale(${sel ? 1.15 : 1});transition:transform 0.15s ease`;
+      slot.innerHTML = `<span style="position:absolute;left:4px;top:2px;font-size:10px;font-weight:bold;text-shadow:0 1px 2px #000">${i + 1}</span>
+        <span style="position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:8px;font-weight:bold;text-shadow:0 1px 2px #000">${BLOCKS[id].name}</span>`;
       this.hotbarEl.appendChild(slot);
     });
   }
@@ -265,7 +297,25 @@ export class VoxelGame {
       hit.py + 1 > this.pos.y &&
       hit.py < this.pos.y + PLAYER_HEIGHT;
     if (overlaps) return;
-    this.world.setBlock(hit.px, hit.py, hit.pz, HOTBAR[this.selected]);
+    const block = HOTBAR[this.selected];
+    this.world.setBlock(hit.px, hit.py, hit.pz, block);
+
+    // Track epilogue blueprint progress
+    if (block === B.STONE) {
+      this.epilogueGoals.pavement.count = Math.min(this.epilogueGoals.pavement.target, this.epilogueGoals.pavement.count + 1);
+    } else if (block === B.BRICK || block === B.PLANKS) {
+      this.epilogueGoals.deli.count = Math.min(this.epilogueGoals.deli.target, this.epilogueGoals.deli.count + 1);
+    } else if (block === B.WOOD) {
+      this.epilogueGoals.coop.count = Math.min(this.epilogueGoals.coop.target, this.epilogueGoals.coop.count + 1);
+    } else if (block === B.GRASS || block === B.LEAVES) {
+      this.epilogueGoals.garden.count = Math.min(this.epilogueGoals.garden.target, this.epilogueGoals.garden.count + 1);
+    }
+    this.updateBlueprintHud();
+
+    const allDone = Object.values(this.epilogueGoals).every((g) => g.count >= g.target);
+    if (allDone) {
+      progression.unlockAchievement('brunch');
+    }
   }
 
   // ---------------------------------------------------------------- simulation
@@ -421,7 +471,36 @@ export class VoxelGame {
 
     if (this.dirLight) {
       this.dirLight.target.position.set(this.pos.x, this.pos.y, this.pos.z);
-      this.dirLight.position.set(this.pos.x + 35, this.pos.y + 70, this.pos.z + 45);
+      if (this.opts.sandbox !== false) {
+        // Natural 360-second day-night cycle
+        const dayProgress = (now * 0.00015) % (Math.PI * 2);
+        const sunElev = Math.sin(dayProgress);
+        const sunAzim = Math.cos(dayProgress);
+        this.dirLight.position.set(
+          this.pos.x + sunAzim * 55,
+          this.pos.y + Math.max(8, sunElev * 75 + 15),
+          this.pos.z + 40
+        );
+        this.dirLight.intensity = THREE.MathUtils.clamp(0.25 + sunElev * 1.05, 0.2, 1.35);
+
+        // Sky transition
+        const daySky = new THREE.Color(0x87ceeb);
+        const duskSky = new THREE.Color(0x3a2c54);
+        const nightSky = new THREE.Color(0x070b19);
+        let curSky = daySky;
+        if (sunElev < -0.1) {
+          curSky = nightSky;
+        } else if (sunElev < 0.25) {
+          const k = (sunElev + 0.1) / 0.35;
+          curSky = duskSky.clone().lerp(daySky, k);
+        }
+        this.scene.background = curSky;
+        if (this.scene.fog) {
+          (this.scene.fog as THREE.Fog).color = curSky;
+        }
+      } else {
+        this.dirLight.position.set(this.pos.x + 35, this.pos.y + 70, this.pos.z + 45);
+      }
     }
     this.world.update(this.pos.x, this.pos.z, 7);
     this.onFrame(dt);

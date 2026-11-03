@@ -8,6 +8,8 @@ import { DESERT_GROUND, FINISH_X, desertGenerator } from './desert';
 import { input } from '../input/UniversalInput';
 import { AmbientParticles } from '../vfx/AmbientParticles';
 import { audio } from '../audio/AudioEngine';
+import { S4_SCRIPT } from './script';
+import { progression } from '../core/progression';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -89,33 +91,23 @@ export class Act4 extends VoxelGame {
   }
 
   private runIntro() {
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'The desert moon was silent in a way that suggested it had been told to be.' },
-        { who: 'Elder Sibilance', text: 'Dave. Thank you for coming. Please... sit. Not on that. On nothing, if possible.', whisper: true },
-        { who: 'Elder Sibilance', text: 'I will be brief. Each event is twice the last. In time, it will undo a star. I propose a silent vault. Ten thousand years. You will not feel a thing.', whisper: true },
-        { who: 'Dave', text: 'Ten thousand years? What about Pim? What about the cure?' },
-        { who: 'Elder Sibilance', text: 'There is no cure. There is only the vault. It is the reasonable answer.', whisper: true },
-        { who: 'Narrator', text: 'It was, annoyingly, the reasonable answer.' },
-        { who: 'Pim', text: 'No.', whisper: true },
-        { who: 'Elder Sibilance', text: 'I beg your pardon?', whisper: true },
-        { who: 'Pim', text: 'I said no. Run, Dave. RUN. Quietly. But run.', whisper: true },
-        {
-          who: 'Narrator',
-          text: 'Above them, the vault ship unfolded like a very polite avalanche.',
-          action: () => {
-            this.silence.visible = this.ship.visible = true;
+    const lines = S4_SCRIPT.intro.map((l, i) =>
+      i === 9
+        ? {
+            ...l,
+            action: () => {
+              this.silence.visible = this.ship.visible = true;
+            }
           }
-        }
-      ],
-      () => {
-        this.state = 'chase';
-        this.frozen = false;
-        this.wallX = this.pos.x - 22;
-        this.wallSpeed = 3.8;
-        this.ui.setObjective('Outrun the Silence! Run to the oasis arch. Press F to fart-boost forward; chain them to go faster.');
-      }
+        : l
     );
+    this.ui.say(lines, () => {
+      this.state = 'chase';
+      this.frozen = false;
+      this.wallX = this.pos.x - 22;
+      this.wallSpeed = 3.8;
+      this.ui.setObjective('Outrun the Silence! Run to the oasis arch. Press F to fart-boost forward; chain them to go faster.');
+    });
   }
 
   private boost() {
@@ -150,28 +142,26 @@ export class Act4 extends VoxelGame {
     this.silence.visible = this.ship.visible = false;
     this.ui.setObjective(null);
     this.ui.setChain(null);
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'Dave reached the oasis arch just ahead of the Silence, which stopped, politely, a metre behind him.' },
-        { who: 'Elder Sibilance', text: 'Dave. Please come back. You do not understand what you are.', whisper: true },
-        { who: 'Pim', text: 'I understand. He is a person who sneezed on a galaxy and is trying to say sorry.', whisper: true },
-        { who: 'Narrator', text: 'Pim then gave a long speech about friendship, courage, and not being afraid of noise. It was delivered at a whisper to a dune. The dune was moved.' },
-        { who: 'Elder Sibilance', text: '...Fine. Go to the Source. But if the silence breaks, it is on you.', whisper: true },
-        { who: 'Dave', text: 'Thank you. And... I am sorry about the vase.' },
-        { who: 'Narrator', text: 'The Elder, who had never been interrupted by an apology, left quietly to think about it.' }
-      ],
-      () => {
-        this.state = 'end';
-        this.ui.showEnd({
-          act: 'ACT IV',
-          title: 'The Quiet Before',
-          blurb: 'Next: Act V, The Bean Tree at the End of the Universe. Where the only thing left to do is wait.',
-          nextHref: '?mode=act5',
-          nextLabel: 'CONTINUE TO ACT V',
-          stats: `Fart-boosts: <b>${this.fartsTotal}</b> &nbsp;·&nbsp; Times caught by the Silence: <b>${this.caught}</b> &nbsp;·&nbsp; Dunes moved: <b>1</b>`
-        });
+    this.ui.say(S4_SCRIPT.finale, () => {
+      this.state = 'end';
+
+      // Persist stats, casualties, and progression
+      progression.addCasualties(this.caught * 5);
+      progression.completeAct(4, { farts: this.fartsTotal, falls: this.caught });
+      progression.unlockAct(5);
+      if (this.caught > 0) {
+        progression.unlockAchievement('reasonable_answer');
       }
-    );
+
+      this.ui.showEnd({
+        act: 'ACT IV',
+        title: 'The Quiet Before',
+        blurb: 'Next: Act V, The Bean Tree at the End of the Universe. Where the only thing left to do is wait.',
+        nextHref: '?mode=act5',
+        nextLabel: 'CONTINUE TO ACT V',
+        stats: `Fart-boosts: <b>${this.fartsTotal}</b> &nbsp;·&nbsp; Times caught by the Silence: <b>${this.caught}</b> &nbsp;·&nbsp; Dunes moved: <b>1</b>`
+      });
+    });
   }
 
   protected override onFrame(dt: number) {

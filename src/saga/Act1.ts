@@ -9,6 +9,9 @@ import { StoryUi } from './StoryUi';
 import { HushBubble } from '../vfx/HushBubble';
 import { AmbientParticles } from '../vfx/AmbientParticles';
 import { audio } from '../audio/AudioEngine';
+import { S1_SCRIPT } from './script';
+import { progression } from '../core/progression';
+import { input } from '../input/UniversalInput';
 
 // ---------------------------------------------------------------- the ship (a block-built interior)
 
@@ -147,26 +150,8 @@ export class Act1 extends VoxelGame {
   // ---------------------------------------------------------------- the story beats
 
   private runIntro() {
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'Dave had been rescued. Throughout, he had been fine.' },
-        { who: 'Narrator', text: 'The Quell are a gentle, noise-averse species. They had prepared a welcome. It was extremely quiet.' },
-        { who: 'Captain Murmur', text: 'Welcome aboard the Whisper. Please... do not... do anything.', whisper: true, mood: 'worried' },
-        { who: 'Dave', text: 'Hi! Thanks for the lift. So sorry about Earth.', mood: 'delighted' },
-        { who: 'Narrator', text: 'Dave said "sorry" with his whole chest, which was the problem.', action: () => this.cinematicFart() },
-        { who: 'Narrator', text: 'The Hush Field held. The captain did not.' },
-        { who: 'Pim', text: 'I am Pim. I have been assigned to you. I would like it noted that I did not volunteer.', whisper: true, mood: 'deadpan' },
-        { who: 'Pim', text: 'We will walk to the briefing room. Your... events... will continue. I will hum. Please stay near things that are not fragile.', whisper: true, mood: 'worried' },
-        { who: 'Narrator', text: 'Everything on the ship was fragile.' },
-        {
-          who: 'Pim',
-          text: 'Follow the glowing lamps. Hold H and I will hum, which refills the Hush field. Do not let it run out.',
-          whisper: true,
-          mood: 'worried'
-        }
-      ],
-      () => this.beginPlay()
-    );
+    const lines = S1_SCRIPT.intro.map((l, i) => (i === 4 ? { ...l, action: () => this.cinematicFart() } : l));
+    this.ui.say(lines, () => this.beginPlay());
   }
 
   private cinematicFart() {
@@ -204,23 +189,17 @@ export class Act1 extends VoxelGame {
     this.vasesLost++;
     this.shake = 0.5;
     this.ui.hideMeter();
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'The Hush field failed. The Heirloom Vase of Quiet had lived a long, quiet life. It ended here.' },
-        { who: 'Pim', text: 'That was a four-thousand-year-old vase. It had a name. Never mind. Let us try again, gently.', whisper: true, mood: 'deadpan' }
-      ],
-      () => {
-        this.pos.set(11.5, 11, 15.5);
-        this.vy = 0;
-        this.dave.group.position.copy(this.pos);
-        this.meter = 100;
-        this.fartCost = 14;
-        this.fartTimer = 3;
-        this.state = 'play';
-        this.frozen = false;
-        this.ui.showMeter('HUSH FIELD', `Cushions Inconvenienced: ${this.casualties}`, 'Follow the glowing lamps to the briefing room. Hold H: Pim hums, the Hush field refills.');
-      }
-    );
+    this.ui.say(S1_SCRIPT.fail, () => {
+      this.pos.set(11.5, 11, 15.5);
+      this.vy = 0;
+      this.dave.group.position.copy(this.pos);
+      this.meter = 100;
+      this.fartCost = 14;
+      this.fartTimer = 3;
+      this.state = 'play';
+      this.frozen = false;
+      this.ui.showMeter('HUSH FIELD', `Cushions Inconvenienced: ${this.casualties}`, 'Follow the glowing lamps to the briefing room. Hold H: Pim hums, the Hush field refills.');
+    });
   }
 
   private startBriefing() {
@@ -228,25 +207,18 @@ export class Act1 extends VoxelGame {
     this.frozen = true;
     this.ui.hideMeter();
     this.pim.setHumming(false);
-    this.ui.say(
-      [
-        { who: 'Pim', text: 'This is the briefing room. It is the quietest room in the galaxy. Please stand extremely still.', whisper: true, mood: 'worried' },
-        { who: 'Pim', text: 'Before the incident... did you eat anything unusual?', whisper: true, mood: 'deadpan' },
-        { who: 'Dave', text: 'Just the brunch special. A bean thing. It was actually really good.', mood: 'delighted' },
-        { who: 'Pim', text: 'It is a Doubling Bean. It has been banned for four thousand years. It does not digest. It grows.', whisper: true, mood: 'horrified' },
-        { who: 'Narrator', text: 'Dave remembered the brunch special. The brunch special did not remember him fondly.' },
-        { who: 'Pim', text: 'Every event is exactly twice the last. Our field can swallow the blast. It cannot stop the event.', whisper: true, mood: 'worried' },
-        { who: 'Dave', text: 'So... is there a cure?', mood: 'neutral' },
-        { who: 'Pim', text: 'There is no cure. There is a rumour. On the Moon of Nom, where... they... enjoy this sort of thing.', whisper: true, mood: 'worried' },
-        { who: 'Narrator', text: 'And so, at roughly the speed of a whisper, the saga began.' }
-      ],
-      () => this.finishAct()
-    );
+    this.ui.say(S1_SCRIPT.briefing, () => this.finishAct());
   }
 
   private finishAct() {
     this.state = 'end';
     this.ui.hideMeter();
+
+    // Persist cross-act casualties and unlock Act II
+    progression.addCasualties(this.casualties + this.vasesLost * 10);
+    progression.completeAct(1, { casualties: this.casualties, falls: this.vasesLost });
+    progression.unlockAct(2);
+
     this.ui.showEndScreen({
       act: 'ACT I',
       title: 'A Very Quiet Briefing',
@@ -261,7 +233,7 @@ export class Act1 extends VoxelGame {
 
   protected override onFrame(dt: number) {
     if (this.state === 'play') {
-      const humming = this.keys.has('KeyH');
+      const humming = this.keys.has('KeyH') || input.actions.hum;
       this.pim.setHumming(humming);
       if (humming) {
         this.meter = Math.min(100, this.meter + 16 * dt);

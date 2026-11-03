@@ -8,6 +8,8 @@ import { DESK, ICE_GROUND, OBS_FLOOR_Y, SHAFT, TELESCOPE, iceGenerator } from '.
 import { input } from '../input/UniversalInput';
 import { AmbientParticles } from '../vfx/AmbientParticles';
 import { audio } from '../audio/AudioEngine';
+import { S3_SCRIPT } from './script';
+import { progression } from '../core/progression';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -93,52 +95,33 @@ export class Act3 extends VoxelGame {
   // ---------------------------------------------------------------- story
 
   private runIntro() {
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'The Ice Moon of Frostbite: a place so cold that even the wind wore a coat.' },
-        { who: 'Pim', text: 'I would like it noted that my antennae have stopped working. I am fine. I am wearing a scarf. I made it myself.', whisper: true },
-        { who: 'Dave', text: 'Look, a hotel! "The Frostbite Hotel: a quiet stay, guaranteed."' },
-        { who: 'Narrator', text: 'The guarantee was, in hindsight, ambitious.' },
-        { who: 'Pim', text: 'The drum said the cook who planted the bean runs a hotel. This is the only hotel for four hundred kilometres.', whisper: true }
-      ],
-      () => {
-        this.state = 'toHotel';
-        this.frozen = false;
-        this.ui.setObjective('Enter the Frostbite Hotel and speak to the concierge.');
-      }
-    );
+    this.ui.say(S3_SCRIPT.intro, () => {
+      this.state = 'toHotel';
+      this.frozen = false;
+      this.ui.setObjective('Enter the Frostbite Hotel and speak to the concierge.');
+    });
   }
 
   private confession() {
     this.state = 'confession';
     this.frozen = true;
     this.ui.setObjective(null);
-    this.ui.say(
-      [
-        { who: 'Chef Glorb', text: 'Welcome to the Frostbite Hotel! Shh. Please, keep your voice down. And your... everything.' },
-        { who: 'Dave', text: 'Are you the guy who sold me the bean?' },
-        { who: 'Chef Glorb', text: 'No. Yes. It was a limited-time special!' },
-        { who: 'Narrator', text: 'Chef Glorb had been practising that line in a mirror for eleven years. It still came out wrong.' },
-        { who: 'Chef Glorb', text: 'I only wanted to make the best brunch in the galaxy. The bean was perfect. It just... does not stop.' },
-        { who: 'Pim', text: 'Is there a cure?', whisper: true },
-        {
-          who: 'Chef Glorb',
-          text: 'There is. The Whisper Bean. It only grows at the Source. I have a star map in the observatory. I would show you, but the elevator is out of order.',
-          action: () => this.ui.popup('"Achoo!"', 900)
-        },
-        { who: 'Narrator', text: 'Glorb sneezed. Somewhere on the roof, a ton of snow slid onto the greenhouse. Nobody mentioned the greenhouse.' },
-        { who: 'Dave', text: 'It is always out of order, isn\'t it?' },
-        { who: 'Chef Glorb', text: 'It is part of the hotel\'s charm. The shaft is that way. Mind the ledges.' }
-      ],
-      () => {
-        this.state = 'climb';
-        this.frozen = false;
-        // Glorb takes "the other elevator" to the observatory
-        this.glorb.group.position.set(TELESCOPE.x + 2, OBS_FLOOR_Y + 1, 3);
-        this.glorb.group.rotation.y = -Math.PI / 2;
-        this.ui.setObjective('Climb the lift shaft. Press F to fart-jump: chain jumps within 2.5 s and each is twice as strong.');
-      }
+    const lines = S3_SCRIPT.confession.map((l, i) =>
+      i === 6
+        ? {
+            ...l,
+            action: () => this.ui.popup('"Achoo!"', 900)
+          }
+        : l
     );
+    this.ui.say(lines, () => {
+      this.state = 'climb';
+      this.frozen = false;
+      // Glorb takes "the other elevator" to the observatory
+      this.glorb.group.position.set(TELESCOPE.x + 2, OBS_FLOOR_Y + 1, 3);
+      this.glorb.group.rotation.y = -Math.PI / 2;
+      this.ui.setObjective('Climb the lift shaft. Press F to fart-jump: chain jumps within 2.5 s and each is twice as strong.');
+    });
   }
 
   /** Upward fart-jump. A chain of jumps doubles in strength, with a little nudge in the camera direction. */
@@ -167,30 +150,24 @@ export class Act3 extends VoxelGame {
     this.frozen = true;
     this.ui.setObjective(null);
     this.ui.setChain(null);
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'Dave reached the observatory with the quiet dignity of a man who had cleared a twelve-storey lift shaft by farting at it.' },
-        { who: 'Chef Glorb', text: 'Ah. You came up the shaft. Most people take the stairs. There are stairs. Nobody mentions them.' },
-        { who: 'Narrator', text: 'Dave looked at the stairs. The stairs looked back, apologetically.' },
-        { who: 'Chef Glorb', text: 'Look through the telescope. The Source is the dead star at the end of the Frostbite Belt. The Whisper Bean grows on the one tree there.', },
-        { who: 'Pim', text: 'Dave... there is a ship in the sky. A long, silent, white one.', whisper: true },
-        { who: 'Pim', text: 'That is Elder Sibilance\'s vault ship. She has come for you.', whisper: true },
-        { who: 'Dave', text: 'Is she angry?' },
-        { who: 'Pim', text: 'She is never angry. That is what makes it so much worse.', whisper: true },
-        { who: 'Narrator', text: 'And so, with a polite cough, the second half of the saga began.' }
-      ],
-      () => {
-        this.state = 'end';
-        this.ui.showEnd({
-          act: 'ACT III',
-          title: 'Mind the Ledges',
-          blurb: 'Next: Act IV, The Elder\'s Offer. Where the desert is quiet, the vault is quieter, and Pim makes a speech.',
-          nextHref: '?mode=act4',
-          nextLabel: 'CONTINUE TO ACT IV',
-          stats: `Fart-jumps: <b>${this.fartsTotal}</b> &nbsp;·&nbsp; Times Dave fell down the shaft: <b>${this.falls}</b> &nbsp;·&nbsp; Stairs discovered: <b>0</b>`
-        });
-      }
-    );
+    this.ui.say(S3_SCRIPT.observatory, () => {
+      this.state = 'end';
+
+      // Persist stats, casualties, and progression
+      progression.addCasualties(this.falls * 3);
+      progression.completeAct(3, { farts: this.fartsTotal, falls: this.falls });
+      progression.unlockAct(4);
+      progression.unlockAchievement('found_the_stairs');
+
+      this.ui.showEnd({
+        act: 'ACT III',
+        title: 'Mind the Ledges',
+        blurb: 'Next: Act IV, The Elder\'s Offer. Where the desert is quiet, the vault is quieter, and Pim makes a speech.',
+        nextHref: '?mode=act4',
+        nextLabel: 'CONTINUE TO ACT IV',
+        stats: `Fart-jumps: <b>${this.fartsTotal}</b> &nbsp;·&nbsp; Times Dave fell down the shaft: <b>${this.falls}</b> &nbsp;·&nbsp; Stairs discovered: <b>0</b>`
+      });
+    });
   }
 
   // ---------------------------------------------------------------- per-frame

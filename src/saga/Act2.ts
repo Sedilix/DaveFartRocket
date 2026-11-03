@@ -9,6 +9,8 @@ import { input } from '../input/UniversalInput';
 import { HushBubble } from '../vfx/HushBubble';
 import { AmbientParticles } from '../vfx/AmbientParticles';
 import { audio } from '../audio/AudioEngine';
+import { S2_SCRIPT } from './script';
+import { progression } from '../core/progression';
 
 const COLORS: Record<string, string> = {
   Narrator: '#9fb4cf',
@@ -110,21 +112,7 @@ export class Act2 extends VoxelGame {
   // ---------------------------------------------------------------- story beats
 
   private runIntro() {
-    this.ui.say(
-      [
-        { who: 'Narrator', text: 'The Moon of Nom was lush, humid, and loud, in the way a place is loud when nobody in it is afraid of noise.' },
-        { who: 'Pim', text: 'The humidity is dreadful for my antennae. Also I have been told to ride on your shoulder. I did not agree to this.', whisper: true },
-        { who: 'Big Toot', text: 'BEHOLD! THE PROPHET ARRIVES WITH THE WIND IN HIS BELLY!', shout: true },
-        { who: 'Dave', text: 'Oh. Hi. I am just looking for a cure, honestly.' },
-        { who: 'Big Toot', text: 'THE CURE LIES ACROSS THE GULCH! THE BRIDGE IS BROKEN! IT WAS BROKEN BY THE LAST PROPHET!', shout: true },
-        { who: 'Narrator', text: 'This was, by the village\'s count, the third prophet that decade.' },
-        { who: 'Pim', text: 'Dave. They want you to fart across it.', whisper: true },
-        { who: 'Dave', text: 'Is that safe?' },
-        { who: 'Pim', text: 'Define safe.', whisper: true },
-        { who: 'Narrator', text: 'Each fart in a quick chain is twice the last, so the Nomads call it "building a gust".' }
-      ],
-      () => this.beginPlay()
-    );
+    this.ui.say(S2_SCRIPT.intro, () => this.beginPlay());
   }
 
   private beginPlay() {
@@ -189,37 +177,38 @@ export class Act2 extends VoxelGame {
     this.frozen = true;
     this.chain = 0;
     this.ui.setObjective(null);
-    this.ui.say(
-      [
-        {
-          who: 'Narrator',
-          text: 'Dave stood before the Gust Horn, a sacred instrument older than the moon\'s oldest joke.',
-          action: () => {
-            this.fartNum++;
-            this.fartsTotal++;
-            this.dave.triggerFartVFX(14);
-            this.hushBubble.triggerFlash(1.6);
-            this.shake = 0.7;
-            this.nomads.forEach((n) => n.cheer(8));
-            this.toot.cheer(8);
-            fartAudio.playBeep(90, 0.3, 0.03);
+    const lines = S2_SCRIPT.finale.map((l, i) =>
+      i === 0
+        ? {
+            ...l,
+            action: () => {
+              this.fartNum++;
+              this.fartsTotal++;
+              this.dave.triggerFartVFX(14);
+              this.hushBubble.triggerFlash(1.6);
+              this.shake = 0.7;
+              this.nomads.forEach((n) => n.cheer(8));
+              this.toot.cheer(8);
+              fartAudio.playBeep(90, 0.3, 0.03);
+            }
           }
-        },
-        { who: 'Narrator', text: 'The Hush Field swallowed the blast. The Nomads, who had never heard of one, were thrilled by the lack of consequences.' },
-        { who: 'Nomads', text: 'THE GREAT GUST HAS BEEN OPENED!', shout: true },
-        { who: 'Big Toot', text: 'THE PROPHET HAS BLESSED US! YOU MAY APPROACH THE SACRED DRUM!', shout: true },
-        { who: 'Pim', text: 'The drum has a recipe carved into it. The bean. And a name: the one who planted it.', whisper: true },
-        { who: 'Big Toot', text: 'HE NOW RUNS A HOTEL! ON THE ICE MOON! IT IS TERRIBLE! GO WITH OUR BLESSING!', shout: true },
-        { who: 'Narrator', text: 'Somewhere behind them, the broken bridge fixed itself out of embarrassment.' },
-        { who: 'Dave', text: 'Okay. Hotel on the ice moon. I can do that.' },
-        { who: 'Narrator', text: 'Dave could not, in fact, do that. But he went anyway.' }
-      ],
-      () => this.finish()
+        : l
     );
+    this.ui.say(lines, () => this.finish());
   }
 
   private finish() {
     this.state = 'end';
+
+    // Persist stats, casualties, and progression
+    progression.addCasualties(this.falls * 2);
+    progression.completeAct(2, { farts: this.fartsTotal, falls: this.falls, bestChain: this.chain });
+    progression.unlockAct(3);
+    progression.unlockAchievement('holy_wind');
+    if (this.chain >= 3) {
+      progression.unlockAchievement('gust_master');
+    }
+
     this.ui.showEnd({
       act: 'ACT II',
       title: 'A Gust of Wind (and Other Prophecies)',
@@ -266,12 +255,7 @@ export class Act2 extends VoxelGame {
       this.extraVel.set(0, 0, 0);
       this.ui.setChain(null);
       this.ui.say(
-        [
-          { who: 'Big Toot', text: 'HE HAS CROSSED THE GULCH! THE FESTIVAL OF THE GREAT GUST CAN BEGIN!', shout: true },
-          { who: 'Pim', text: 'Please do not do the thing they want you to do.', whisper: true },
-          { who: 'Dave', text: 'I think I have to do the thing they want me to do.' },
-          { who: 'Narrator', text: 'This was, historically, how most of Dave\'s problems began.' }
-        ],
+        S2_SCRIPT.plaza,
         () => {
           this.state = 'horn';
           this.frozen = false;
