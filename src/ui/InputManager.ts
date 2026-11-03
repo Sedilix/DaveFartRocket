@@ -4,8 +4,14 @@ export interface InputState {
   moveVector: { x: number; y: number }; // normalized -1 to 1
 }
 
-// Minimum time between manual releases (keyboard, tap or mash), so each beat can be read and heard
-const RELEASE_COOLDOWN_MS = 900;
+/** Accurate per-milestone cooldown synced with GameLoop.ts */
+export function getFartCooldownMs(fartNumber: number): number {
+  const nextNumber = Math.min(25, fartNumber + 1);
+  if (nextNumber >= 9) {
+    return (1.5 + (nextNumber - 9) * 0.03) * 1000;
+  }
+  return 850;
+}
 
 export class InputManager {
   public inputState: InputState = {
@@ -40,14 +46,13 @@ export class InputManager {
     this.onReleaseCallback = cb;
   }
 
-  /** Fires the release callback unless one fired less than RELEASE_COOLDOWN_MS ago. */
+  /** Fires the release callback unless one fired less than milestone cooldown ago. */
   private tryRelease() {
-    // No release while the ending plays (the controls are hidden), or before the game is wired up
     if (this.endingPlaying()) return;
     if (!this.onReleaseCallback) return;
-    if (performance.now() - this.lastReleaseTime < RELEASE_COOLDOWN_MS) return;
-    // A rejected tap must not re-lock the button for another RELEASE_COOLDOWN_MS. The callback may
-    // return false, or return nothing: either way, a fart that never advanced the counter was rejected.
+    const fartNumber = useGameStore.getState().fartNumber;
+    const cooldown = getFartCooldownMs(fartNumber);
+    if (performance.now() - this.lastReleaseTime < cooldown) return;
     const before = useGameStore.getState().fartNumber;
     if (this.onReleaseCallback() === false) return;
     const after = useGameStore.getState().fartNumber;
@@ -77,12 +82,15 @@ export class InputManager {
     return useGameStore.getState().isClimax;
   }
 
-  /** Locks manual releases for RELEASE_COOLDOWN_MS and greys the button out with a WAIT label. */
+  /** Locks manual releases for the actual milestone cooldown and shows WAIT label. */
   private startCooldown() {
     this.lastReleaseTime = performance.now();
     const btn = this.releaseBtn;
     if (!btn) return;
+    const fartNumber = useGameStore.getState().fartNumber;
+    const cooldownMs = getFartCooldownMs(fartNumber);
     const label = btn.querySelector('.release-text');
+    btn.classList.remove('armed');
     btn.classList.add('cooling');
     btn.setAttribute('aria-disabled', 'true');
     if (label) label.textContent = 'WAIT';
@@ -90,9 +98,11 @@ export class InputManager {
     this.coolingTimer = window.setTimeout(() => {
       this.coolingTimer = null;
       btn.classList.remove('cooling');
+      btn.classList.add('armed');
       btn.setAttribute('aria-disabled', 'false');
       if (label) label.textContent = 'RELEASE';
-    }, RELEASE_COOLDOWN_MS);
+      window.setTimeout(() => btn?.classList.remove('armed'), 400);
+    }, cooldownMs);
   }
 
   private setupKeyboard() {

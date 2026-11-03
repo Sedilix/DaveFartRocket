@@ -36,6 +36,14 @@ export class StoryUi {
   private objective: HTMLElement;
   private chain: HTMLElement;
   private end: HTMLElement;
+
+  // Meter elements
+  private meterCard: HTMLElement;
+  private meterTitle: HTMLElement;
+  private meterCounter: HTMLElement;
+  private meterFill: HTMLElement;
+  private meterHint: HTMLElement;
+
   private lines: Line[] = [];
   private index = 0;
   private done: (() => void) | null = null;
@@ -53,6 +61,16 @@ export class StoryUi {
     this.root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:var(--z-hud);';
     this.root.innerHTML = `
       <div data-id="objective" class="story-objective-banner" style="display:none"></div>
+      <div data-id="meter" class="hud-meter-card" style="display:none">
+        <div class="hud-meter-header">
+          <span data-id="meter-title" class="hud-meter-title">HUSH FIELD</span>
+          <span data-id="meter-counter" class="hud-meter-counter"></span>
+        </div>
+        <div class="hud-meter-bar">
+          <div data-id="meter-fill" class="hud-meter-fill"></div>
+        </div>
+        <div data-id="meter-hint" class="hud-meter-hint"></div>
+      </div>
       <div data-id="chain" style="position:absolute;left:50%;top:64px;transform:translateX(-50%);font-family:var(--font-ui);font-weight:var(--fw-heavy);font-size:var(--fs-label);letter-spacing:var(--tracking-widest);text-shadow:0 2px 8px #000;opacity:0;transition:opacity .25s;color:#fff;pointer-events:none"></div>
       <div data-id="pop" class="story-pop-text"></div>
       <div data-id="dialog" class="story-dialogue-card" style="display:none">
@@ -72,6 +90,12 @@ export class StoryUi {
     this.objective = q('objective');
     this.chain = q('chain');
     this.end = q('end');
+
+    this.meterCard = q('meter');
+    this.meterTitle = q('meter-title');
+    this.meterCounter = q('meter-counter');
+    this.meterFill = q('meter-fill');
+    this.meterHint = q('meter-hint');
 
     window.addEventListener('keydown', (e) => {
       if (this.active && (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') && !e.repeat) {
@@ -190,9 +214,38 @@ export class StoryUi {
     if (text) this.objective.textContent = text;
   }
 
+  public showMeter(title: string, counter = '', hint = '') {
+    this.meterTitle.textContent = title;
+    this.meterCounter.textContent = counter;
+    this.meterHint.textContent = hint;
+    this.meterCard.style.display = 'flex';
+  }
+
+  public updateMeter(percentage: number, counter?: string, hint?: string) {
+    const clamped = Math.max(0, Math.min(100, percentage));
+    this.meterFill.style.width = `${clamped}%`;
+    if (clamped > 50) {
+      this.meterFill.style.background = 'linear-gradient(90deg, var(--col-accent-cyan), #9be7ff)';
+    } else if (clamped > 25) {
+      this.meterFill.style.background = 'linear-gradient(90deg, var(--col-accent-yellow), var(--col-accent-amber))';
+    } else {
+      this.meterFill.style.background = 'linear-gradient(90deg, var(--col-accent-red), var(--col-accent-rose))';
+    }
+    if (counter !== undefined) this.meterCounter.textContent = counter;
+    if (hint !== undefined) this.meterHint.textContent = hint;
+  }
+
+  public hideMeter() {
+    this.meterCard.style.display = 'none';
+  }
+
   public setChain(text: string | null) {
     this.chain.textContent = text ?? '';
     this.chain.style.opacity = text ? '1' : '0';
+  }
+
+  public showEndScreen(e: EndScreen) {
+    this.showEnd(e);
   }
 
   public showEnd(e: EndScreen) {

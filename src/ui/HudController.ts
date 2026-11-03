@@ -473,23 +473,59 @@ export class HudController {
   }
 
   private altitudeShown = -1;
-
-  /** Altimeter: log-scale fill (so the first hops and the final 30 km both read), metres below 10 km, then km. */
-  public updateAltitude(meters: number) {
-    const alt = Math.max(0, meters);
-    if (Math.abs(alt - this.altitudeShown) < 0.5 && this.altitudeShown >= 0) return;
-    this.altitudeShown = alt;
-    const el = (this.altEl ??= this.container.querySelector<HTMLElement>('#hud-altimeter')!);
-    const value = (this.altValueEl ??= this.container.querySelector<HTMLElement>('#alt-value')!);
-    const fill = (this.altFillEl ??= this.container.querySelector<HTMLElement>('#alt-fill')!);
-    el.classList.toggle('visible', alt > 1.5);
-    value.textContent = alt < 10000 ? `${Math.round(alt).toLocaleString('en-US')} m` : `${(alt / 1000).toFixed(1)} km`;
-    fill.style.height = `${(Math.log10(1 + alt) / Math.log10(1 + 30000)) * 100}%`;
-  }
-
+  private lastAlt = 0;
+  private peakAltitude = 0;
   private altEl: HTMLElement | null = null;
   private altValueEl: HTMLElement | null = null;
+  private altSpeedEl: HTMLElement | null = null;
   private altFillEl: HTMLElement | null = null;
+  private altPointerEl: HTMLElement | null = null;
+  private altPeakEl: HTMLElement | null = null;
+
+  /** Altimeter: log-scale fill, context ticks, pointer chip, peak marker, vertical speed. */
+  public updateAltitude(meters: number, fartNumber = 0, dt = 0.016) {
+    const alt = Math.max(0, meters);
+    const el = (this.altEl ??= this.container.querySelector<HTMLElement>('#hud-altimeter')!);
+    el.classList.toggle('visible', fartNumber >= 9 || alt > 1.5);
+
+    if (Math.abs(alt - this.altitudeShown) < 0.2 && this.altitudeShown >= 0) return;
+
+    const vSpeed = (alt - this.lastAlt) / Math.max(0.001, dt);
+    this.lastAlt = alt;
+    this.altitudeShown = alt;
+    this.peakAltitude = Math.max(this.peakAltitude, alt);
+
+    const value = (this.altValueEl ??= this.container.querySelector<HTMLElement>('#alt-value')!);
+    const speed = (this.altSpeedEl ??= this.container.querySelector<HTMLElement>('#alt-speed')!);
+    const fill = (this.altFillEl ??= this.container.querySelector<HTMLElement>('#alt-fill')!);
+    const pointer = (this.altPointerEl ??= this.container.querySelector<HTMLElement>('#alt-pointer')!);
+    const peak = (this.altPeakEl ??= this.container.querySelector<HTMLElement>('#alt-peak')!);
+
+    if (alt < 10000) {
+      value.textContent = `${Math.round(alt).toLocaleString('en-US')} m`;
+    } else {
+      value.textContent = `${(alt / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`;
+    }
+
+    if (Math.abs(vSpeed) > 1.5) {
+      if (Math.abs(vSpeed) < 1000) {
+        speed.textContent = `${vSpeed > 0 ? '+' : ''}${Math.round(vSpeed)} m/s`;
+      } else {
+        speed.textContent = `${vSpeed > 0 ? '+' : ''}${(vSpeed / 1000).toFixed(1)} km/s`;
+      }
+      speed.style.color = vSpeed > 0 ? 'var(--col-accent-emerald)' : 'var(--col-accent-orange)';
+    } else {
+      speed.textContent = '0 m/s';
+      speed.style.color = 'rgba(255, 255, 255, 0.6)';
+    }
+
+    const pct = Math.min(100, (Math.log10(1 + alt) / Math.log10(1 + 30000)) * 100);
+    fill.style.height = `${pct}%`;
+    pointer.style.bottom = `${pct}%`;
+
+    const peakPct = Math.min(100, (Math.log10(1 + this.peakAltitude) / Math.log10(1 + 30000)) * 100);
+    peak.style.bottom = `${peakPct}%`;
+  }
 
   public updateTensionRing(timer: number, maxTimer: number) {
     const progress = Math.min(1, Math.max(0, timer / maxTimer));
@@ -518,15 +554,20 @@ export class HudController {
   private getTemplate(): string {
     const circumference = RING_CIRCUMFERENCE;
     return `
-      <!-- ALTIMETER: log-scale gauge, fades in once Dave leaves the ground -->
+      <!-- ALTIMETER: log-scale gauge, context ticks, pointer chip, peak altitude -->
       <div id="hud-altimeter" class="hud-altimeter" aria-hidden="true">
         <span class="alt-title">ALTITUDE</span>
         <span id="alt-value" class="alt-value">0 m</span>
+        <span id="alt-speed" class="alt-speed">0 m/s</span>
         <div class="alt-track">
           <div id="alt-fill" class="alt-fill"></div>
-          <span class="alt-tick" style="bottom:44.8%"><i>100 m</i></span>
-          <span class="alt-tick" style="bottom:67%"><i>1 km</i></span>
-          <span class="alt-tick" style="bottom:89.3%"><i>10 km</i></span>
+          <div id="alt-peak" class="alt-peak" title="Peak Altitude"></div>
+          <div id="alt-pointer" class="alt-pointer"></div>
+          <span class="alt-tick" style="bottom:53.6%"><i>☁️ 250 m</i></span>
+          <span class="alt-tick" style="bottom:72.7%"><i>🌐 1.8 km</i></span>
+          <span class="alt-tick" style="bottom:80.5%"><i>🛰️ 4 km</i></span>
+          <span class="alt-tick" style="bottom:86.2%"><i>🌕 7.2 km</i></span>
+          <span class="alt-tick" style="bottom:91.1%"><i>✨ 12 km</i></span>
         </div>
       </div>
 

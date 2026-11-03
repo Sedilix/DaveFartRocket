@@ -609,7 +609,7 @@ export class GameLoop {
 
     // 5. Update environment & sky color
     const currentAltitude = this.ending ? 30000 : dp.y; // the ending is staged in space
-    this.hudController.updateAltitude(currentAltitude);
+    this.hudController.updateAltitude(currentAltitude, store.fartNumber, dt);
     const skyColor = this.atmosphere.getSkyColorInto(this.skyScratch, currentAltitude);
     (this.scene.background as THREE.Color).copy(skyColor);
     if (this.scene.fog) {
